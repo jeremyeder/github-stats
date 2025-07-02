@@ -17,7 +17,7 @@ Track interactions with GitHub organizations and repositories.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/github-stats.git
+git clone https://github.com/jeremyeder/github-stats.git
 cd github-stats
 
 # Install in development mode
@@ -157,6 +157,24 @@ ruff check .
 # Type checking
 mypy github_stats
 ```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## CI/CD
+
+This project uses GitHub Actions for:
+- Code formatting with `ruff`
+- Linting with `ruff check`
+- Type checking with `mypy`
+- Running tests with `pytest`
+
+All checks must pass before merging PRs.
 
 ## License
 
