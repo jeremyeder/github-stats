@@ -72,7 +72,11 @@ def show():
 
             if interactions_data:
                 df = pd.DataFrame([
-                    {'date': i.date, 'action_type': i.action or 'Unknown', 'count': i.count}
+                    {
+                        'date': i.date, 
+                        'action_type': i.action or 'Unknown', 
+                        'count': i.count
+                    }
                     for i in interactions_data
                 ])
 

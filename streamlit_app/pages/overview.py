@@ -17,9 +17,9 @@ def show():
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            total_devs = session.query(func.count(func.distinct(Interaction.user))).filter(
-                Interaction.user.isnot(None)
-            ).scalar()
+            total_devs = session.query(
+                func.count(func.distinct(Interaction.user))
+            ).filter(Interaction.user.isnot(None)).scalar()
             st.metric("Total Developers", total_devs)
 
         with col2:
