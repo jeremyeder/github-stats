@@ -5,6 +5,7 @@ from sqlalchemy import func
 
 from github_stats.models.interactions import Interaction, Organization, Repository
 from github_stats.tracking.tracker import InteractionTracker
+from github_stats.api.client import GitHubClient
 from github_stats.utils.database import get_db
 
 
@@ -64,7 +65,7 @@ def show():
                 interaction_count = session.query(Interaction).filter_by(organization_id=org.id).count()
                 last_synced = org.last_synced_at.strftime("%Y-%m-%d %H:%M") if org.last_synced_at else "Never"
                 
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                col1, col2, col3, col4, col5 = st.columns([2.5, 0.8, 0.8, 0.8, 1])
                 
                 with col1:
                     st.write(f"**{org.name}** - {repo_count} repos, {interaction_count} interactions")
@@ -82,10 +83,62 @@ def show():
                             st.error(f"❌ Sync failed: {str(e)}")
                 
                 with col3:
+                    if st.button("🔄🔄 Sync All", key=f"sync_all_org_{org.id}"):
+                        try:
+                            with GitHubClient() as client:
+                                tracker = InteractionTracker(client)
+                                with st.spinner(f"Fetching all repositories from {org.name}..."):
+                                    # Track organization first
+                                    org_result = tracker.track_organization(org.name)
+                                    
+                                    if org_result["exists"]:
+                                        # Get all repositories for this organization
+                                        repos = client.list_organization_repos(org.name)
+                                        tracked_repos = 0
+                                        total_interactions = 0
+                                        
+                                        progress_bar = st.progress(0)
+                                        status_text = st.empty()
+                                        
+                                        for i, repo in enumerate(repos):
+                                            status_text.text(f"Tracking {repo['full_name']}... ({i+1}/{len(repos)})")
+                                            progress_bar.progress((i + 1) / len(repos))
+                                            
+                                            repo_info = tracker.track_repository(repo["full_name"], org.name)
+                                            
+                                            if repo_info["exists"]:
+                                                owner, repo_name = repo["full_name"].split("/")
+                                                
+                                                # Track all interaction types
+                                                commits = tracker.track_commits(owner, repo_name)
+                                                issues = tracker.track_issues(owner, repo_name)
+                                                prs = tracker.track_pull_requests(owner, repo_name)
+                                                stars = tracker.track_stargazers(owner, repo_name)
+                                                forks = tracker.track_forks(owner, repo_name)
+                                                releases = tracker.track_releases(owner, repo_name)
+                                                workflows = tracker.track_workflow_runs(owner, repo_name)
+                                                
+                                                repo_interactions = (
+                                                    len(commits) + len(issues) + len(prs) + 
+                                                    len(stars) + len(forks) + len(releases) + len(workflows)
+                                                )
+                                                total_interactions += repo_interactions
+                                                tracked_repos += 1
+                                        
+                                        progress_bar.empty()
+                                        status_text.empty()
+                                        st.success(f"✅ Synced all {tracked_repos} repositories from {org.name} ({total_interactions:,} total interactions)")
+                                    else:
+                                        st.error(f"❌ Organization {org.name} not found on GitHub")
+                                    st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Sync All failed: {str(e)}")
+                
+                with col4:
                     if st.button("🗑️ Delete", key=f"delete_org_{org.id}"):
                         st.session_state[f"confirm_delete_org_{org.id}"] = True
                 
-                with col4:
+                with col5:
                     if st.session_state.get(f"confirm_delete_org_{org.id}", False):
                         if st.button("✅ Confirm", key=f"confirm_org_{org.id}"):
                             try:
