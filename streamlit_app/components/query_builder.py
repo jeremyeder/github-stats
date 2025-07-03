@@ -277,7 +277,7 @@ def show():
         )
 
     # Controls row
-    col1, col2, col3 = st.columns([2, 2, 3])
+    col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
     
     with col1:
         # Logical operators
@@ -290,43 +290,49 @@ def show():
         )
 
     with col2:
+        st.markdown("**Preview**")
+        # Show query preview button
+        show_preview = st.button("📋 Show Query Preview", use_container_width=True)
+
+    with col3:
         st.markdown("**Execute**")
         # Execute query button
         if st.button("🚀 Execute Query", type="primary", use_container_width=True):
             st.session_state.query_executed = True
             st.success("Query executed successfully!")
 
-    with col3:
+    with col4:
         pass  # Empty space for balance
 
-    # Query Preview Section (moved below filters)
-    st.markdown("---")
-    st.subheader("📋 Query Preview")
+    # Conditional Query Preview Section
+    if show_preview:
+        st.markdown("---")
+        st.subheader("📋 Query Preview")
 
-    # Generate SQL query preview with correct column names
-    query_parts = []
-    if selected_orgs:
-        org_list = "', '".join(selected_orgs)
-        query_parts.append(f"o.name IN ('{org_list}')")
-    if selected_repos:
-        repo_list = "', '".join(selected_repos)
-        query_parts.append(f"r.full_name IN ('{repo_list}')")
-    if selected_users:
-        user_list = "', '".join(selected_users)
-        query_parts.append(f"i.user IN ('{user_list}')")
-    if selected_types:
-        type_list = "', '".join(selected_types)
-        query_parts.append(f"i.type IN ('{type_list}')")
-    if selected_actions:
-        action_list = "', '".join(selected_actions)
-        query_parts.append(f"i.action IN ('{action_list}')")
+        # Generate SQL query preview with correct column names
+        query_parts = []
+        if selected_orgs:
+            org_list = "', '".join(selected_orgs)
+            query_parts.append(f"o.name IN ('{org_list}')")
+        if selected_repos:
+            repo_list = "', '".join(selected_repos)
+            query_parts.append(f"r.full_name IN ('{repo_list}')")
+        if selected_users:
+            user_list = "', '".join(selected_users)
+            query_parts.append(f"i.user IN ('{user_list}')")
+        if selected_types:
+            type_list = "', '".join(selected_types)
+            query_parts.append(f"i.type IN ('{type_list}')")
+        if selected_actions:
+            action_list = "', '".join(selected_actions)
+            query_parts.append(f"i.action IN ('{action_list}')")
 
-    if len(date_range) == 2:
-        query_parts.append(f"i.timestamp BETWEEN '{date_range[0]}' AND '{date_range[1]}'")
+        if len(date_range) == 2:
+            query_parts.append(f"i.timestamp BETWEEN '{date_range[0]}' AND '{date_range[1]}'")
 
-    where_clause = f" {logical_operator} ".join(query_parts) if query_parts else "1=1"
+        where_clause = f" {logical_operator} ".join(query_parts) if query_parts else "1=1"
 
-    mock_sql = f"""SELECT *
+        mock_sql = f"""SELECT *
 FROM interactions i
 LEFT JOIN repositories r ON i.repository_id = r.id
 LEFT JOIN organizations o ON i.organization_id = o.id
@@ -334,13 +340,13 @@ WHERE {where_clause}
 ORDER BY i.timestamp DESC
 LIMIT 1000;"""
 
-    st.code(mock_sql, language="sql")
+        st.code(mock_sql, language="sql")
 
-    # Query validation status
-    if query_parts:
-        st.success("✅ Query is valid")
-    else:
-        st.warning("⚠️ No filters selected - will return all data")
+        # Query validation status
+        if query_parts:
+            st.success("✅ Query is valid")
+        else:
+            st.warning("⚠️ No filters selected - will return all data")
 
     # Results Section
     if st.session_state.get('query_executed', False):
