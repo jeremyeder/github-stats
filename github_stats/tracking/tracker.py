@@ -48,7 +48,7 @@ class InteractionTracker:
                 organization_id=org_id,
                 repository_id=repo_id,
                 action=f"{method} {endpoint}",
-                extra_data=extra_data or {}
+                extra_data=extra_data or {},
             )
 
             db.add(interaction)
@@ -79,7 +79,7 @@ class InteractionTracker:
                 self.track_api_call(
                     f"/orgs/{org_name}",
                     organization=org_name,
-                    extra_data={"github_id": org_data.get("id")}
+                    extra_data={"github_id": org_data.get("id")},
                 )
             except Exception as e:
                 logger.error(f"Failed to fetch organization {org_name}: {e}")
@@ -96,9 +96,7 @@ class InteractionTracker:
         repo_info = {"full_name": repo_full_name, "exists": False, "error": None}
 
         with get_db() as db:
-            repo = self._get_or_create_repository(
-                db, repo_full_name, organization
-            )
+            repo = self._get_or_create_repository(db, repo_full_name, organization)
 
             repo_info["id"] = repo.id
             repo_info["full_name"] = repo.full_name
@@ -128,7 +126,7 @@ class InteractionTracker:
                     f"/repos/{owner}/{repo_name}",
                     organization=organization,
                     repository=repo_full_name,
-                    extra_data={"github_id": repo_data.get("id")}
+                    extra_data={"github_id": repo_data.get("id")},
                 )
             except Exception as e:
                 logger.error(f"Failed to fetch repository {repo_full_name}: {e}")
@@ -147,18 +145,16 @@ class InteractionTracker:
         interactions = []
 
         try:
-            commits = self.client.get_repository_commits(
-                owner, repo, since, until
-            )
+            commits = self.client.get_repository_commits(owner, repo, since, until)
 
             with get_db() as db:
-                repo_obj = self._get_or_create_repository(
-                    db, f"{owner}/{repo}", owner
-                )
+                repo_obj = self._get_or_create_repository(db, f"{owner}/{repo}", owner)
 
                 for commit in commits:
                     # Extract commit timestamp from GitHub API
-                    commit_date_str = commit.get("commit", {}).get("author", {}).get("date")
+                    commit_date_str = (
+                        commit.get("commit", {}).get("author", {}).get("date")
+                    )
                     commit_timestamp = None
                     if commit_date_str:
                         try:
@@ -178,9 +174,11 @@ class InteractionTracker:
                         extra_data={
                             "message": commit.get("commit", {}).get("message"),
                             "sha": commit.get("sha"),
-                            "committer_date": commit.get("commit", {}).get("committer", {}).get("date"),
-                            "author_date": commit_date_str
-                        }
+                            "committer_date": commit.get("commit", {})
+                            .get("committer", {})
+                            .get("date"),
+                            "author_date": commit_date_str,
+                        },
                     )
                     db.add(interaction)
                     interactions.append(interaction)
@@ -192,7 +190,7 @@ class InteractionTracker:
                     f"/repos/{owner}/{repo}/commits",
                     organization=owner,
                     repository=f"{owner}/{repo}",
-                    extra_data={"count": len(commits)}
+                    extra_data={"count": len(commits)},
                 )
 
                 logger.debug(f"Tracked {len(commits)} commits for {owner}/{repo}")
@@ -213,14 +211,10 @@ class InteractionTracker:
         interactions = []
 
         try:
-            issues = self.client.get_repository_issues(
-                owner, repo, state, since
-            )
+            issues = self.client.get_repository_issues(owner, repo, state, since)
 
             with get_db() as db:
-                repo_obj = self._get_or_create_repository(
-                    db, f"{owner}/{repo}", owner
-                )
+                repo_obj = self._get_or_create_repository(db, f"{owner}/{repo}", owner)
 
                 for issue in issues:
                     # Skip pull requests (they come in issues endpoint too)
@@ -253,8 +247,8 @@ class InteractionTracker:
                             "closed_at": issue.get("closed_at"),
                             "labels": [
                                 label.get("name") for label in issue.get("labels", [])
-                            ]
-                        }
+                            ],
+                        },
                     )
                     db.add(interaction)
                     interactions.append(interaction)
@@ -266,7 +260,7 @@ class InteractionTracker:
                     f"/repos/{owner}/{repo}/issues",
                     organization=owner,
                     repository=f"{owner}/{repo}",
-                    extra_data={"count": len(interactions), "state": state}
+                    extra_data={"count": len(interactions), "state": state},
                 )
 
                 logger.debug(f"Tracked {len(interactions)} issues for {owner}/{repo}")
@@ -289,9 +283,7 @@ class InteractionTracker:
             pulls = self.client.get_repository_pulls(owner, repo, state)
 
             with get_db() as db:
-                repo_obj = self._get_or_create_repository(
-                    db, f"{owner}/{repo}", owner
-                )
+                repo_obj = self._get_or_create_repository(db, f"{owner}/{repo}", owner)
 
                 for pr in pulls:
                     # Extract PR timestamp from GitHub API
@@ -321,8 +313,8 @@ class InteractionTracker:
                             "created_at": created_at_str,
                             "updated_at": pr.get("updated_at"),
                             "merged_at": pr.get("merged_at"),
-                            "closed_at": pr.get("closed_at")
-                        }
+                            "closed_at": pr.get("closed_at"),
+                        },
                     )
                     db.add(interaction)
                     interactions.append(interaction)
@@ -334,7 +326,7 @@ class InteractionTracker:
                     f"/repos/{owner}/{repo}/pulls",
                     organization=owner,
                     repository=f"{owner}/{repo}",
-                    extra_data={"count": len(pulls), "state": state}
+                    extra_data={"count": len(pulls), "state": state},
                 )
 
                 logger.debug(f"Tracked {len(pulls)} pull requests for {owner}/{repo}")
@@ -350,6 +342,7 @@ class InteractionTracker:
         repo: str,
     ) -> list[Interaction]:
         """Track stargazers for a repository."""
+
         def extract_star_data(star: dict[str, Any]) -> dict[str, Any]:
             # Extract star timestamp from GitHub API
             starred_at_str = star.get("starred_at")
@@ -368,8 +361,8 @@ class InteractionTracker:
                 "resource_url": star.get("html_url"),
                 "extra_data": {
                     "starred_at": starred_at_str,
-                    "user_type": star.get("type")
-                }
+                    "user_type": star.get("type"),
+                },
             }
 
         return self._track_with_error_handling(
@@ -378,7 +371,7 @@ class InteractionTracker:
             repo,
             lambda: self.client.get_repository_stargazers(owner, repo),
             InteractionType.STAR,
-            extract_star_data
+            extract_star_data,
         )
 
     def track_forks(
@@ -387,6 +380,7 @@ class InteractionTracker:
         repo: str,
     ) -> list[Interaction]:
         """Track forks for a repository."""
+
         def extract_fork_data(fork: dict[str, Any]) -> dict[str, Any]:
             # Extract fork timestamp from GitHub API
             created_at_str = fork.get("created_at")
@@ -406,8 +400,8 @@ class InteractionTracker:
                 "extra_data": {
                     "fork_name": fork.get("full_name"),
                     "created_at": created_at_str,
-                    "private": fork.get("private", False)
-                }
+                    "private": fork.get("private", False),
+                },
             }
 
         return self._track_with_error_handling(
@@ -416,7 +410,7 @@ class InteractionTracker:
             repo,
             lambda: self.client.get_repository_forks(owner, repo),
             InteractionType.FORK,
-            extract_fork_data
+            extract_fork_data,
         )
 
     def track_releases(
@@ -425,6 +419,7 @@ class InteractionTracker:
         repo: str,
     ) -> list[Interaction]:
         """Track releases for a repository."""
+
         def extract_release_data(release: dict[str, Any]) -> dict[str, Any]:
             # Extract release timestamp from GitHub API
             published_at_str = release.get("published_at")
@@ -447,8 +442,8 @@ class InteractionTracker:
                     "draft": release.get("draft", False),
                     "prerelease": release.get("prerelease", False),
                     "published_at": published_at_str,
-                    "created_at": release.get("created_at")
-                }
+                    "created_at": release.get("created_at"),
+                },
             }
 
         return self._track_with_error_handling(
@@ -457,7 +452,7 @@ class InteractionTracker:
             repo,
             lambda: self.client.get_repository_releases(owner, repo),
             InteractionType.RELEASE,
-            extract_release_data
+            extract_release_data,
         )
 
     def track_workflow_runs(
@@ -466,6 +461,7 @@ class InteractionTracker:
         repo: str,
     ) -> list[Interaction]:
         """Track workflow runs for a repository."""
+
         def extract_workflow_data(run: dict[str, Any]) -> dict[str, Any]:
             # Extract workflow run timestamp from GitHub API
             created_at_str = run.get("created_at")
@@ -489,8 +485,8 @@ class InteractionTracker:
                     "run_number": run.get("run_number"),
                     "event": run.get("event"),
                     "created_at": created_at_str,
-                    "updated_at": run.get("updated_at")
-                }
+                    "updated_at": run.get("updated_at"),
+                },
             }
 
         return self._track_with_error_handling(
@@ -499,7 +495,7 @@ class InteractionTracker:
             repo,
             lambda: self.client.get_repository_workflow_runs(owner, repo),
             InteractionType.WORKFLOW_RUN,
-            extract_workflow_data
+            extract_workflow_data,
         )
 
     def _get_or_create_organization(
@@ -534,9 +530,7 @@ class InteractionTracker:
                 organization = parts[0]
                 repo_name = parts[1]
         else:
-            full_name = (
-            f"{organization}/{repo_name}" if organization else repo_name
-        )
+            full_name = f"{organization}/{repo_name}" if organization else repo_name
 
         repo = db.query(Repository).filter_by(full_name=full_name).first()
 
@@ -547,9 +541,7 @@ class InteractionTracker:
                 org_id = org.id
 
             repo = Repository(
-                name=repo_name,
-                full_name=full_name,
-                organization_id=org_id
+                name=repo_name, full_name=full_name, organization_id=org_id
             )
             db.add(repo)
             db.commit()
@@ -575,7 +567,7 @@ class InteractionTracker:
                 type=interaction_type,
                 repository_id=repo_obj.id,
                 organization_id=repo_obj.organization_id,
-                **interaction_data
+                **interaction_data,
             )
             db.add(interaction)
             interactions.append(interaction)
@@ -600,9 +592,7 @@ class InteractionTracker:
 
             # Store interactions in database
             with get_db() as db:
-                repo_obj = self._get_or_create_repository(
-                    db, f"{owner}/{repo}", owner
-                )
+                repo_obj = self._get_or_create_repository(db, f"{owner}/{repo}", owner)
 
                 interactions = self._create_interactions_batch(
                     db, interaction_type, repo_obj, items, extract_fn
@@ -611,20 +601,16 @@ class InteractionTracker:
                 db.commit()
 
                 # Track the API call
-                endpoint = self._get_api_endpoint(
-                    operation_name, owner, repo
-                )
+                endpoint = self._get_api_endpoint(operation_name, owner, repo)
                 self.track_api_call(
                     endpoint,
                     organization=owner,
                     repository=f"{owner}/{repo}",
-                    extra_data={"count": len(items)}
+                    extra_data={"count": len(items)},
                 )
 
                 # Log the result
-                self._log_tracking_result(
-                    operation_name, len(items), owner, repo
-                )
+                self._log_tracking_result(operation_name, len(items), owner, repo)
 
         except Exception as e:
             error_msg = ERROR_MESSAGES.get(
@@ -645,20 +631,17 @@ class InteractionTracker:
             "releases": f"/repos/{owner}/{repo}/releases",
             "workflow_runs": f"/repos/{owner}/{repo}/actions/runs",
         }
-        return endpoints.get(
-            operation_name, f"/repos/{owner}/{repo}/{operation_name}"
-        )
+        return endpoints.get(operation_name, f"/repos/{owner}/{repo}/{operation_name}")
 
     def _log_tracking_result(
         self, operation_name: str, count: int, owner: str, repo: str
     ) -> None:
         """Log tracking result in standardized format."""
         message = LOG_MESSAGES.get(
-            "interactions_tracked",
-            "Tracked {count} {interaction_type} for {repo}"
+            "interactions_tracked", "Tracked {count} {interaction_type} for {repo}"
         )
-        logger.debug(message.format(
-            count=count,
-            interaction_type=operation_name,
-            repo=f"{owner}/{repo}"
-        ))
+        logger.debug(
+            message.format(
+                count=count, interaction_type=operation_name, repo=f"{owner}/{repo}"
+            )
+        )

@@ -49,11 +49,7 @@ def check_db_has_data() -> dict[str, int]:
     """
     from ..models.interactions import Interaction, Organization, Repository
 
-    counts = {
-        "organizations": 0,
-        "repositories": 0,
-        "interactions": 0
-    }
+    counts = {"organizations": 0, "repositories": 0, "interactions": 0}
 
     try:
         with get_db() as db:

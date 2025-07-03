@@ -25,12 +25,19 @@ def main():
         # Change to the script directory to ensure relative paths work
         os.chdir(script_dir)
 
-        subprocess.run([
-            python_executable, "-m", "streamlit", "run",
-            "streamlit_app/app.py",
-            "--server.port", "8501",
-            "--server.address", "localhost"
-        ])
+        subprocess.run(
+            [
+                python_executable,
+                "-m",
+                "streamlit",
+                "run",
+                "streamlit_app/app.py",
+                "--server.port",
+                "8501",
+                "--server.address",
+                "localhost",
+            ]
+        )
     except KeyboardInterrupt:
         print("\nStreamlit app stopped.")
     except Exception as e:

@@ -19,15 +19,18 @@ def get_filter_options():
     with get_db() as session:
         organizations = session.query(Organization.name).all()
         repositories = session.query(Repository.full_name).all()
-        users = session.query(Interaction.user).filter(
-            Interaction.user.isnot(None)
-        ).distinct().all()
+        users = (
+            session.query(Interaction.user)
+            .filter(Interaction.user.isnot(None))
+            .distinct()
+            .all()
+        )
 
         return {
-            'organizations': [org.name for org in organizations],
-            'repositories': [repo.full_name for repo in repositories],
-            'users': [user.user for user in users],
-            'interaction_types': [t.value for t in InteractionType]
+            "organizations": [org.name for org in organizations],
+            "repositories": [repo.full_name for repo in repositories],
+            "users": [user.user for user in users],
+            "interaction_types": [t.value for t in InteractionType],
         }
 
 
@@ -47,7 +50,7 @@ def create_sidebar_filters() -> dict:
         "Select date range:",
         value=(start_date, end_date),
         max_value=end_date,
-        help="Select the date range for analysis"
+        help="Select the date range for analysis",
     )
 
     if isinstance(date_range, tuple) and len(date_range) == 2:
@@ -60,25 +63,25 @@ def create_sidebar_filters() -> dict:
     st.sidebar.subheader("🔧 Interaction Types")
     selected_types = st.sidebar.multiselect(
         "Filter by interaction types:",
-        options=options['interaction_types'],
-        default=options['interaction_types'],
-        help="Select which interaction types to include"
+        options=options["interaction_types"],
+        default=options["interaction_types"],
+        help="Select which interaction types to include",
     )
 
     # Repository filter
     st.sidebar.subheader("📁 Repositories")
     selected_repos = st.sidebar.multiselect(
         "Filter by repositories:",
-        options=options['repositories'],
-        help="Leave empty to include all repositories"
+        options=options["repositories"],
+        help="Leave empty to include all repositories",
     )
 
     # Organization filter
     st.sidebar.subheader("🏢 Organizations")
     selected_orgs = st.sidebar.multiselect(
         "Filter by organizations:",
-        options=options['organizations'],
-        help="Leave empty to include all organizations"
+        options=options["organizations"],
+        help="Leave empty to include all organizations",
     )
 
     # Chart configuration
@@ -86,9 +89,9 @@ def create_sidebar_filters() -> dict:
 
     time_grouping = st.sidebar.selectbox(
         "Time grouping for charts:",
-        options=['date', 'week', 'month', 'hour'],
+        options=["date", "week", "month", "hour"],
         index=0,
-        help="How to group data by time"
+        help="How to group data by time",
     )
 
     top_n = st.sidebar.slider(
@@ -96,7 +99,7 @@ def create_sidebar_filters() -> dict:
         min_value=5,
         max_value=50,
         value=15,
-        help="Number of top items to show in ranking charts"
+        help="Number of top items to show in ranking charts",
     )
 
     # Data view options
@@ -104,34 +107,32 @@ def create_sidebar_filters() -> dict:
     show_raw_data = st.sidebar.checkbox(
         "Show raw data table",
         value=False,
-        help="Display the raw data table below charts"
+        help="Display the raw data table below charts",
     )
 
     include_stars = st.sidebar.checkbox(
-        "⭐ Include stars",
-        value=False,
-        help="Include star interactions in analysis"
+        "⭐ Include stars", value=False, help="Include star interactions in analysis"
     )
 
     enable_export = st.sidebar.checkbox(
-        "Enable data export",
-        value=True,
-        help="Allow CSV export of filtered data"
+        "Enable data export", value=True, help="Allow CSV export of filtered data"
     )
 
     return {
-        'start_date': datetime.combine(start_date, datetime.min.time()),
-        'end_date': datetime.combine(end_date, datetime.max.time()),
-        'interaction_types': [InteractionType(t) for t in selected_types] if selected_types else None,
-        'repositories': None,  # Will need to convert to IDs
-        'organizations': None,  # Will need to convert to IDs
-        'selected_repo_names': selected_repos,
-        'selected_org_names': selected_orgs,
-        'time_grouping': time_grouping,
-        'top_n': top_n,
-        'show_raw_data': show_raw_data,
-        'include_stars': include_stars,
-        'enable_export': enable_export
+        "start_date": datetime.combine(start_date, datetime.min.time()),
+        "end_date": datetime.combine(end_date, datetime.max.time()),
+        "interaction_types": [InteractionType(t) for t in selected_types]
+        if selected_types
+        else None,
+        "repositories": None,  # Will need to convert to IDs
+        "organizations": None,  # Will need to convert to IDs
+        "selected_repo_names": selected_repos,
+        "selected_org_names": selected_orgs,
+        "time_grouping": time_grouping,
+        "top_n": top_n,
+        "show_raw_data": show_raw_data,
+        "include_stars": include_stars,
+        "enable_export": enable_export,
     }
 
 
@@ -139,18 +140,22 @@ def convert_names_to_ids(filters: dict) -> dict:
     """Convert repository and organization names to IDs."""
     with get_db() as session:
         # Convert repository names to IDs
-        if filters['selected_repo_names']:
-            repo_ids = session.query(Repository.id).filter(
-                Repository.full_name.in_(filters['selected_repo_names'])
-            ).all()
-            filters['repositories'] = [r.id for r in repo_ids]
+        if filters["selected_repo_names"]:
+            repo_ids = (
+                session.query(Repository.id)
+                .filter(Repository.full_name.in_(filters["selected_repo_names"]))
+                .all()
+            )
+            filters["repositories"] = [r.id for r in repo_ids]
 
         # Convert organization names to IDs
-        if filters['selected_org_names']:
-            org_ids = session.query(Organization.id).filter(
-                Organization.name.in_(filters['selected_org_names'])
-            ).all()
-            filters['organizations'] = [o.id for o in org_ids]
+        if filters["selected_org_names"]:
+            org_ids = (
+                session.query(Organization.id)
+                .filter(Organization.name.in_(filters["selected_org_names"]))
+                .all()
+            )
+            filters["organizations"] = [o.id for o in org_ids]
 
     return filters
 
@@ -198,7 +203,7 @@ def show():
             with col1:
                 st.subheader("📈 Interactions Over Time")
                 time_series_chart = chart_gen.create_time_series_chart(
-                    df, filters['time_grouping']
+                    df, filters["time_grouping"]
                 )
                 st.plotly_chart(time_series_chart, use_container_width=True)
 
@@ -209,7 +214,7 @@ def show():
             with col2:
                 st.subheader("📊 Interactions by Type (Stacked)")
                 stacked_chart = chart_gen.create_stacked_bar_chart(
-                    df, filters['time_grouping']
+                    df, filters["time_grouping"]
                 )
                 st.plotly_chart(stacked_chart, use_container_width=True)
 
@@ -221,39 +226,39 @@ def show():
             st.markdown("---")
             st.subheader("🏆 Top Rankings")
 
-            tab1, tab2, tab3 = st.tabs([
-                "Top Repositories", "Top Users", "Top Organizations"
-            ])
+            tab1, tab2, tab3 = st.tabs(
+                ["Top Repositories", "Top Users", "Top Organizations"]
+            )
 
             with tab1:
-                if 'repository_name' in df.columns:
+                if "repository_name" in df.columns:
                     repo_chart = chart_gen.create_horizontal_bar_chart(
-                        df, 'repository_name', filters['top_n']
+                        df, "repository_name", filters["top_n"]
                     )
                     st.plotly_chart(repo_chart, use_container_width=True)
                 else:
                     st.info("No repository data available")
 
             with tab2:
-                if 'user' in df.columns:
+                if "user" in df.columns:
                     user_chart = chart_gen.create_horizontal_bar_chart(
-                        df, 'user', filters['top_n']
+                        df, "user", filters["top_n"]
                     )
                     st.plotly_chart(user_chart, use_container_width=True)
                 else:
                     st.info("No user data available")
 
             with tab3:
-                if 'organization_name' in df.columns:
+                if "organization_name" in df.columns:
                     org_chart = chart_gen.create_horizontal_bar_chart(
-                        df, 'organization_name', filters['top_n']
+                        df, "organization_name", filters["top_n"]
                     )
                     st.plotly_chart(org_chart, use_container_width=True)
                 else:
                     st.info("No organization data available")
 
             # Export functionality
-            if filters['enable_export']:
+            if filters["enable_export"]:
                 st.markdown("---")
                 st.subheader("💾 Export Data")
 
@@ -269,11 +274,11 @@ def show():
                         data=csv_data,
                         file_name=f"github_stats_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         mime="text/csv",
-                        help="Download the filtered data as CSV"
+                        help="Download the filtered data as CSV",
                     )
 
             # Raw data table
-            if filters['show_raw_data']:
+            if filters["show_raw_data"]:
                 st.markdown("---")
                 st.subheader("🗃️ Raw Data")
 
@@ -284,8 +289,8 @@ def show():
                 display_columns = st.multiselect(
                     "Select columns to display:",
                     options=df.columns.tolist(),
-                    default=['timestamp', 'type', 'user', 'repository_name', 'action'],
-                    help="Choose which columns to show in the table"
+                    default=["timestamp", "type", "user", "repository_name", "action"],
+                    help="Choose which columns to show in the table",
                 )
 
                 if display_columns:
@@ -299,7 +304,7 @@ def show():
                         f"Page (1 of {total_pages}):",
                         min_value=1,
                         max_value=total_pages,
-                        value=1
+                        value=1,
                     )
 
                     start_idx = (page - 1) * page_size
@@ -308,7 +313,7 @@ def show():
                     st.dataframe(
                         df[display_columns].iloc[start_idx:end_idx],
                         use_container_width=True,
-                        height=400
+                        height=400,
                     )
                 else:
                     st.warning("Please select at least one column to display")

@@ -55,12 +55,7 @@ class GitHubClient:
         if remaining and int(remaining) < 10:
             logger.warning(f"Low rate limit remaining: {remaining}")
 
-    def _request(
-        self,
-        method: str,
-        endpoint: str,
-        **kwargs
-    ) -> dict[str, Any]:
+    def _request(self, method: str, endpoint: str, **kwargs) -> dict[str, Any]:
         """Make authenticated request to GitHub API."""
         url = f"{self.base_url}{endpoint}"
 
@@ -93,9 +88,7 @@ class GitHubClient:
         return self._request("GET", f"/repos/{owner}/{repo}")
 
     def list_organization_repos(
-        self,
-        org_name: str,
-        per_page: int = 100
+        self, org_name: str, per_page: int = 100
     ) -> list[dict[str, Any]]:
         """List all repositories for an organization."""
         repos = []
@@ -105,7 +98,7 @@ class GitHubClient:
             response = self._request(
                 "GET",
                 f"/orgs/{org_name}/repos",
-                params={"per_page": per_page, "page": page}
+                params={"per_page": per_page, "page": page},
             )
 
             if not response:
@@ -126,7 +119,7 @@ class GitHubClient:
         repo: str,
         since: datetime | None = None,
         until: datetime | None = None,
-        per_page: int = 100
+        per_page: int = 100,
     ) -> list[dict[str, Any]]:
         """Get repository commits."""
         params = {"per_page": per_page}
@@ -142,9 +135,7 @@ class GitHubClient:
         while True:
             params["page"] = page
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/commits",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/commits", params=params
             )
 
             if not response:
@@ -165,7 +156,7 @@ class GitHubClient:
         repo: str,
         state: str = "all",
         since: datetime | None = None,
-        per_page: int = 100
+        per_page: int = 100,
     ) -> list[dict[str, Any]]:
         """Get repository issues."""
         params = {"state": state, "per_page": per_page}
@@ -179,9 +170,7 @@ class GitHubClient:
         while True:
             params["page"] = page
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/issues",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/issues", params=params
             )
 
             if not response:
@@ -197,11 +186,7 @@ class GitHubClient:
         return issues
 
     def get_repository_pulls(
-        self,
-        owner: str,
-        repo: str,
-        state: str = "all",
-        per_page: int = 100
+        self, owner: str, repo: str, state: str = "all", per_page: int = 100
     ) -> list[dict[str, Any]]:
         """Get repository pull requests."""
         params = {"state": state, "per_page": per_page}
@@ -212,9 +197,7 @@ class GitHubClient:
         while True:
             params["page"] = page
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/pulls",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/pulls", params=params
             )
 
             if not response:
@@ -230,10 +213,7 @@ class GitHubClient:
         return pulls
 
     def get_repository_stargazers(
-        self,
-        owner: str,
-        repo: str,
-        per_page: int = 100
+        self, owner: str, repo: str, per_page: int = 100
     ) -> list[dict[str, Any]]:
         """Get repository stargazers."""
         stars = []
@@ -242,9 +222,7 @@ class GitHubClient:
         while True:
             params = {"per_page": per_page, "page": page}
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/stargazers",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/stargazers", params=params
             )
 
             if not response:
@@ -260,10 +238,7 @@ class GitHubClient:
         return stars
 
     def get_repository_forks(
-        self,
-        owner: str,
-        repo: str,
-        per_page: int = 100
+        self, owner: str, repo: str, per_page: int = 100
     ) -> list[dict[str, Any]]:
         """Get repository forks."""
         forks = []
@@ -272,9 +247,7 @@ class GitHubClient:
         while True:
             params = {"per_page": per_page, "page": page}
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/forks",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/forks", params=params
             )
 
             if not response:
@@ -290,10 +263,7 @@ class GitHubClient:
         return forks
 
     def get_repository_releases(
-        self,
-        owner: str,
-        repo: str,
-        per_page: int = 100
+        self, owner: str, repo: str, per_page: int = 100
     ) -> list[dict[str, Any]]:
         """Get repository releases."""
         releases = []
@@ -302,9 +272,7 @@ class GitHubClient:
         while True:
             params = {"per_page": per_page, "page": page}
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/releases",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/releases", params=params
             )
 
             if not response:
@@ -320,10 +288,7 @@ class GitHubClient:
         return releases
 
     def get_repository_workflows(
-        self,
-        owner: str,
-        repo: str,
-        per_page: int = 100
+        self, owner: str, repo: str, per_page: int = 100
     ) -> list[dict[str, Any]]:
         """Get repository workflows."""
         workflows = []
@@ -332,9 +297,7 @@ class GitHubClient:
         while True:
             params = {"per_page": per_page, "page": page}
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/actions/workflows",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/actions/workflows", params=params
             )
 
             if not response:
@@ -352,10 +315,7 @@ class GitHubClient:
         return workflows
 
     def get_repository_workflow_runs(
-        self,
-        owner: str,
-        repo: str,
-        per_page: int = 100
+        self, owner: str, repo: str, per_page: int = 100
     ) -> list[dict[str, Any]]:
         """Get repository workflow runs."""
         runs = []
@@ -364,9 +324,7 @@ class GitHubClient:
         while True:
             params = {"per_page": per_page, "page": page}
             response = self._request(
-                "GET",
-                f"/repos/{owner}/{repo}/actions/runs",
-                params=params
+                "GET", f"/repos/{owner}/{repo}/actions/runs", params=params
             )
 
             if not response:

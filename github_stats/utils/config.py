@@ -10,10 +10,7 @@ class Settings(BaseSettings):
     """Application settings."""
 
     github_token: str = Field(..., env="GITHUB_TOKEN")
-    database_url: str = Field(
-        "sqlite:///./github_stats.db",
-        env="DATABASE_URL"
-    )
+    database_url: str = Field("sqlite:///./github_stats.db", env="DATABASE_URL")
     log_level: str = Field("WARNING", env="LOG_LEVEL")
 
     # Email configuration

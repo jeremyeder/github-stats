@@ -29,8 +29,10 @@ class TestStreamlitApp:
         # Check that all expected pages are in the radio options
         radio_options = at.sidebar.radio[0].options
         expected_pages = [
-            "Query Builder", "Advanced Analytics",
-            "Repository Stats", "Developer Stats"
+            "Query Builder",
+            "Advanced Analytics",
+            "Repository Stats",
+            "Developer Stats",
         ]
 
         for page in expected_pages:

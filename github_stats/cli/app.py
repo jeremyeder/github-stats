@@ -43,9 +43,7 @@ def init():
             "but may create duplicate entries if you re-track the same repositories.[/yellow]"
         )
 
-        if not typer.confirm(
-            "Do you want to continue with database initialization?"
-        ):
+        if not typer.confirm("Do you want to continue with database initialization?"):
             console.print("[yellow]Database initialization cancelled.[/yellow]")
             raise typer.Exit(0)
 
@@ -106,8 +104,13 @@ def track_org(
                         workflows = tracker.track_workflow_runs(owner, repo_name)
 
                         total_interactions = (
-                            len(commits) + len(issues) + len(prs) + len(stars) +
-                            len(forks) + len(releases) + len(workflows)
+                            len(commits)
+                            + len(issues)
+                            + len(prs)
+                            + len(stars)
+                            + len(forks)
+                            + len(releases)
+                            + len(workflows)
                         )
                         console.print(
                             f"[green]✓[/green] {repo['full_name']} - "
@@ -177,41 +180,32 @@ def track_repo(
 
             console.print("[bold]Fetching issues...[/bold]")
             issue_interactions = tracker.track_issues(owner, repo_name)
-            console.print(
-                f"[green]✓[/green] Tracked {len(issue_interactions)} issues"
-            )
+            console.print(f"[green]✓[/green] Tracked {len(issue_interactions)} issues")
 
             console.print("[bold]Fetching pull requests...[/bold]")
             pr_interactions = tracker.track_pull_requests(owner, repo_name)
             console.print(
-                f"[green]✓[/green] Tracked {len(pr_interactions)} "
-                "pull requests"
+                f"[green]✓[/green] Tracked {len(pr_interactions)} pull requests"
             )
 
             console.print("[bold]Fetching stargazers...[/bold]")
             star_interactions = tracker.track_stargazers(owner, repo_name)
-            console.print(
-                f"[green]✓[/green] Tracked {len(star_interactions)} stars"
-            )
+            console.print(f"[green]✓[/green] Tracked {len(star_interactions)} stars")
 
             console.print("[bold]Fetching forks...[/bold]")
             fork_interactions = tracker.track_forks(owner, repo_name)
-            console.print(
-                f"[green]✓[/green] Tracked {len(fork_interactions)} forks"
-            )
+            console.print(f"[green]✓[/green] Tracked {len(fork_interactions)} forks")
 
             console.print("[bold]Fetching releases...[/bold]")
             release_interactions = tracker.track_releases(owner, repo_name)
             console.print(
-                f"[green]✓[/green] Tracked {len(release_interactions)} "
-                "releases"
+                f"[green]✓[/green] Tracked {len(release_interactions)} releases"
             )
 
             console.print("[bold]Fetching workflow runs...[/bold]")
             workflow_interactions = tracker.track_workflow_runs(owner, repo_name)
             console.print(
-                f"[green]✓[/green] Tracked {len(workflow_interactions)} "
-                "workflow runs"
+                f"[green]✓[/green] Tracked {len(workflow_interactions)} workflow runs"
             )
         else:
             if repo_info["error"]:
@@ -248,14 +242,12 @@ def stats(
 
     with get_db() as db:
         # Build query
-        query = db.query(
-            Interaction.type,
-            func.count(Interaction.id).label("count")
-        )
+        query = db.query(Interaction.type, func.count(Interaction.id).label("count"))
 
         # Apply filters
         if days:
             from datetime import timedelta
+
             since = datetime.utcnow() - timedelta(days=days)
             query = query.filter(Interaction.timestamp >= since)
 
@@ -323,7 +315,7 @@ def list_orgs():
                 org.name,
                 str(org.github_id) if org.github_id else "-",
                 str(repo_count),
-                org.created_at.strftime("%Y-%m-%d %H:%M")
+                org.created_at.strftime("%Y-%m-%d %H:%M"),
             )
 
         console.print(table)
@@ -366,7 +358,7 @@ def list_repos(
                 str(repo.github_id) if repo.github_id else "-",
                 "Yes" if repo.is_private else "No",
                 str(interaction_count),
-                repo.created_at.strftime("%Y-%m-%d %H:%M")
+                repo.created_at.strftime("%Y-%m-%d %H:%M"),
             )
 
         console.print(table)
@@ -403,11 +395,17 @@ def rate_limit():
 
 @app.command()
 def send_report(
-    to_emails: list[str] = typer.Argument(..., help="Email addresses to send report to"),
-    days: int = typer.Option(7, "--days", "-d", help="Number of days to include in report"),
+    to_emails: list[str] = typer.Argument(
+        ..., help="Email addresses to send report to"
+    ),
+    days: int = typer.Option(
+        7, "--days", "-d", help="Number of days to include in report"
+    ),
     org: str | None = typer.Option(None, "--org", "-o", help="Filter by organization"),
     repo: str | None = typer.Option(None, "--repo", "-r", help="Filter by repository"),
-    subject: str | None = typer.Option(None, "--subject", "-s", help="Custom email subject"),
+    subject: str | None = typer.Option(
+        None, "--subject", "-s", help="Custom email subject"
+    ),
 ):
     """Send email report manually."""
     setup_logging()
@@ -425,7 +423,7 @@ def send_report(
         smtp_port=settings.smtp_port,
         username=settings.smtp_username,
         password=settings.smtp_password,
-        use_tls=settings.smtp_use_tls
+        use_tls=settings.smtp_use_tls,
     )
 
     # Send report
@@ -436,7 +434,7 @@ def send_report(
         days=days,
         organization=org,
         repository=repo,
-        subject_prefix=subject or "GitHub Stats"
+        subject_prefix=subject or "GitHub Stats",
     )
 
     if success:
@@ -448,11 +446,15 @@ def send_report(
 
 @app.command()
 def schedule_reports(
-    to_emails: list[str] = typer.Argument(..., help="Email addresses to send reports to"),
+    to_emails: list[str] = typer.Argument(
+        ..., help="Email addresses to send reports to"
+    ),
     daily: bool = typer.Option(False, "--daily", help="Schedule daily reports"),
     weekly: bool = typer.Option(False, "--weekly", help="Schedule weekly reports"),
     monthly: bool = typer.Option(False, "--monthly", help="Schedule monthly reports"),
-    time_str: str = typer.Option("09:00", "--time", "-t", help="Time to send reports (HH:MM)"),
+    time_str: str = typer.Option(
+        "09:00", "--time", "-t", help="Time to send reports (HH:MM)"
+    ),
     org: str | None = typer.Option(None, "--org", "-o", help="Filter by organization"),
     repo: str | None = typer.Option(None, "--repo", "-r", help="Filter by repository"),
 ):
@@ -467,7 +469,9 @@ def schedule_reports(
         raise typer.Exit(1)
 
     if not any([daily, weekly, monthly]):
-        console.print("[red]Error: Must specify at least one of --daily, --weekly, or --monthly[/red]")
+        console.print(
+            "[red]Error: Must specify at least one of --daily, --weekly, or --monthly[/red]"
+        )
         raise typer.Exit(1)
 
     # Create email reporter and scheduler
@@ -476,7 +480,7 @@ def schedule_reports(
         smtp_port=settings.smtp_port,
         username=settings.smtp_username,
         password=settings.smtp_password,
-        use_tls=settings.smtp_use_tls
+        use_tls=settings.smtp_use_tls,
     )
     scheduler = ReportScheduler(reporter)
 
@@ -487,11 +491,15 @@ def schedule_reports(
 
     if weekly:
         scheduler.schedule_weekly_report(to_emails, "monday", time_str, org, repo)
-        console.print(f"[green]✓[/green] Scheduled weekly reports on Monday at {time_str}")
+        console.print(
+            f"[green]✓[/green] Scheduled weekly reports on Monday at {time_str}"
+        )
 
     if monthly:
         scheduler.schedule_monthly_report(to_emails, 1, time_str, org, repo)
-        console.print(f"[green]✓[/green] Scheduled monthly reports on 1st at {time_str}")
+        console.print(
+            f"[green]✓[/green] Scheduled monthly reports on 1st at {time_str}"
+        )
 
     # Show scheduled jobs
     jobs = scheduler.list_jobs()

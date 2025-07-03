@@ -24,9 +24,10 @@ class ReportScheduler:
         to_emails: list[str],
         time_str: str = "09:00",
         organization: str | None = None,
-        repository: str | None = None
+        repository: str | None = None,
     ) -> None:
         """Schedule daily summary report."""
+
         def send_daily():
             logger.info("Sending scheduled daily report")
             self.email_reporter.send_summary_report(
@@ -34,7 +35,7 @@ class ReportScheduler:
                 days=1,
                 organization=organization,
                 repository=repository,
-                subject_prefix="Daily GitHub Stats"
+                subject_prefix="Daily GitHub Stats",
             )
 
         job = schedule.every().day.at(time_str).do(send_daily)
@@ -47,9 +48,10 @@ class ReportScheduler:
         day_of_week: str = "monday",
         time_str: str = "09:00",
         organization: str | None = None,
-        repository: str | None = None
+        repository: str | None = None,
     ) -> None:
         """Schedule weekly summary report."""
+
         def send_weekly():
             logger.info("Sending scheduled weekly report")
             self.email_reporter.send_summary_report(
@@ -57,14 +59,16 @@ class ReportScheduler:
                 days=7,
                 organization=organization,
                 repository=repository,
-                subject_prefix="Weekly GitHub Stats"
+                subject_prefix="Weekly GitHub Stats",
             )
 
         # Get the schedule method for the day
         day_method = getattr(schedule.every(), day_of_week.lower())
         job = day_method.at(time_str).do(send_weekly)
         self.jobs.append(job)
-        logger.info(f"Scheduled weekly report on {day_of_week} at {time_str} for {', '.join(to_emails)}")
+        logger.info(
+            f"Scheduled weekly report on {day_of_week} at {time_str} for {', '.join(to_emails)}"
+        )
 
     def schedule_monthly_report(
         self,
@@ -72,9 +76,10 @@ class ReportScheduler:
         day_of_month: int = 1,
         time_str: str = "09:00",
         organization: str | None = None,
-        repository: str | None = None
+        repository: str | None = None,
     ) -> None:
         """Schedule monthly summary report."""
+
         def send_monthly():
             # Only send if today is the specified day of month
             if datetime.now().day == day_of_month:
@@ -84,12 +89,14 @@ class ReportScheduler:
                     days=30,
                     organization=organization,
                     repository=repository,
-                    subject_prefix="Monthly GitHub Stats"
+                    subject_prefix="Monthly GitHub Stats",
                 )
 
         job = schedule.every().day.at(time_str).do(send_monthly)
         self.jobs.append(job)
-        logger.info(f"Scheduled monthly report on day {day_of_month} at {time_str} for {', '.join(to_emails)}")
+        logger.info(
+            f"Scheduled monthly report on day {day_of_month} at {time_str} for {', '.join(to_emails)}"
+        )
 
     def clear_all_jobs(self) -> None:
         """Clear all scheduled jobs."""

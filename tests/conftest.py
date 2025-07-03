@@ -10,16 +10,17 @@ import pytest
 @pytest.fixture
 def temp_db():
     """Create a temporary database for testing."""
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_file:
         temp_db_path = temp_file.name
 
     # Mock the database URL to use our temp database
-    with patch('github_stats.utils.config.get_settings') as mock_settings:
+    with patch("github_stats.utils.config.get_settings") as mock_settings:
         mock_settings.return_value.database_url = f"sqlite:///{temp_db_path}"
         mock_settings.return_value.log_level = "ERROR"
 
         # Initialize the database
         from github_stats.utils.database import init_db
+
         init_db()
 
         yield temp_db_path
@@ -32,7 +33,7 @@ def temp_db():
 @pytest.fixture
 def mock_empty_db():
     """Mock database with no data."""
-    with patch('github_stats.utils.database.get_db') as mock_get_db:
+    with patch("github_stats.utils.database.get_db") as mock_get_db:
         from unittest.mock import MagicMock
 
         # Create a mock session that returns empty results

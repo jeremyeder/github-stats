@@ -26,8 +26,13 @@ def main():
         st.title("Navigation")
         page = st.radio(
             "Select a page:",
-            ["Query Builder", "Advanced Analytics", "Repository Stats", "Developer Stats"],
-            index=0
+            [
+                "Query Builder",
+                "Advanced Analytics",
+                "Repository Stats",
+                "Developer Stats",
+            ],
+            index=0,
         )
 
     if page == "Query Builder":

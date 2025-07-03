@@ -17,9 +17,11 @@ from github_stats.utils.database import get_db
 # Try to import plotly, fall back to basic charts if not available
 try:
     import plotly.express as px
+
     PLOTLY_AVAILABLE = True
 except ImportError:
     PLOTLY_AVAILABLE = False
+
 
 def get_organizations():
     """Get list of organizations from database."""
@@ -27,46 +29,65 @@ def get_organizations():
         organizations = session.query(Organization.name).all()
         return [org.name for org in organizations]
 
+
 def get_repositories():
     """Get list of repositories from database."""
     with get_db() as session:
         repositories = session.query(Repository.full_name).all()
         return [repo.full_name for repo in repositories]
 
+
 def get_users():
     """Get list of users from database."""
     with get_db() as session:
-        users = session.query(Interaction.user).filter(
-            Interaction.user.isnot(None)
-        ).distinct().all()
+        users = (
+            session.query(Interaction.user)
+            .filter(Interaction.user.isnot(None))
+            .distinct()
+            .all()
+        )
         return [user.user for user in users]
+
 
 def get_actions():
     """Get list of actions from database."""
     with get_db() as session:
-        actions = session.query(Interaction.action).filter(
-            Interaction.action.isnot(None)
-        ).distinct().all()
+        actions = (
+            session.query(Interaction.action)
+            .filter(Interaction.action.isnot(None))
+            .distinct()
+            .all()
+        )
         return [action.action for action in actions]
 
-def execute_query(selected_orgs, selected_repos, selected_users, selected_types, selected_actions, date_range, logical_operator="AND", exclude_stars=True):
+
+def execute_query(
+    selected_orgs,
+    selected_repos,
+    selected_users,
+    selected_types,
+    selected_actions,
+    date_range,
+    logical_operator="AND",
+    exclude_stars=True,
+):
     """Execute real database query based on filter selections."""
     with get_db() as session:
         # Build base query with joins
-        query = session.query(
-            Interaction.id,
-            Interaction.timestamp,
-            Organization.name.label('organization'),
-            Repository.full_name.label('repository'),
-            Interaction.user,
-            Interaction.type,
-            Interaction.action,
-            Interaction.resource_id,
-            Interaction.extra_data
-        ).outerjoin(
-            Repository, Interaction.repository_id == Repository.id
-        ).outerjoin(
-            Organization, Interaction.organization_id == Organization.id
+        query = (
+            session.query(
+                Interaction.id,
+                Interaction.timestamp,
+                Organization.name.label("organization"),
+                Repository.full_name.label("repository"),
+                Interaction.user,
+                Interaction.type,
+                Interaction.action,
+                Interaction.resource_id,
+                Interaction.extra_data,
+            )
+            .outerjoin(Repository, Interaction.repository_id == Repository.id)
+            .outerjoin(Organization, Interaction.organization_id == Organization.id)
         )
 
         # Build filter conditions
@@ -92,7 +113,9 @@ def execute_query(selected_orgs, selected_repos, selected_users, selected_types,
             # Convert dates to datetime for comparison
             start_datetime = datetime.combine(start_date, datetime.min.time())
             end_datetime = datetime.combine(end_date, datetime.max.time())
-            conditions.append(Interaction.timestamp.between(start_datetime, end_datetime))
+            conditions.append(
+                Interaction.timestamp.between(start_datetime, end_datetime)
+            )
 
         # Exclude stars if requested
         if exclude_stars:
@@ -105,6 +128,7 @@ def execute_query(selected_orgs, selected_repos, selected_users, selected_types,
                     query = query.filter(condition)
             else:  # OR
                 from sqlalchemy import or_
+
                 query = query.filter(or_(*conditions))
 
         # Execute query
@@ -113,28 +137,40 @@ def execute_query(selected_orgs, selected_repos, selected_users, selected_types,
         # Convert to DataFrame
         data = []
         for result in results:
-            data.append({
-                "ID": result.id,
-                "Timestamp": result.timestamp,
-                "Organization": result.organization or "N/A",
-                "Repository": result.repository or "N/A",
-                "User": result.user or "N/A",
-                "Interaction Type": result.type.value if result.type else "N/A",
-                "Action": result.action or "N/A",
-                "Resource ID": result.resource_id or "N/A",
-                "Details": str(result.extra_data) if result.extra_data else "N/A"
-            })
+            data.append(
+                {
+                    "ID": result.id,
+                    "Timestamp": result.timestamp,
+                    "Organization": result.organization or "N/A",
+                    "Repository": result.repository or "N/A",
+                    "User": result.user or "N/A",
+                    "Interaction Type": result.type.value if result.type else "N/A",
+                    "Action": result.action or "N/A",
+                    "Resource ID": result.resource_id or "N/A",
+                    "Details": str(result.extra_data) if result.extra_data else "N/A",
+                }
+            )
 
         return pd.DataFrame(data)
 
-def generate_chart_data(selected_orgs, selected_repos, selected_users, selected_types, selected_actions, date_range, logical_operator="AND", exclude_stars=True):
+
+def generate_chart_data(
+    selected_orgs,
+    selected_repos,
+    selected_users,
+    selected_types,
+    selected_actions,
+    date_range,
+    logical_operator="AND",
+    exclude_stars=True,
+):
     """Generate real chart data from database based on filters."""
     with get_db() as session:
         # Build base query with same filters as main query
-        base_query = session.query(Interaction).outerjoin(
-            Repository, Interaction.repository_id == Repository.id
-        ).outerjoin(
-            Organization, Interaction.organization_id == Organization.id
+        base_query = (
+            session.query(Interaction)
+            .outerjoin(Repository, Interaction.repository_id == Repository.id)
+            .outerjoin(Organization, Interaction.organization_id == Organization.id)
         )
 
         # Apply same filters as main query
@@ -159,7 +195,9 @@ def generate_chart_data(selected_orgs, selected_repos, selected_users, selected_
             start_date, end_date = date_range
             start_datetime = datetime.combine(start_date, datetime.min.time())
             end_datetime = datetime.combine(end_date, datetime.max.time())
-            conditions.append(Interaction.timestamp.between(start_datetime, end_datetime))
+            conditions.append(
+                Interaction.timestamp.between(start_datetime, end_datetime)
+            )
 
         # Exclude stars if requested
         if exclude_stars:
@@ -172,49 +210,65 @@ def generate_chart_data(selected_orgs, selected_repos, selected_users, selected_
                     base_query = base_query.filter(condition)
             else:  # OR
                 from sqlalchemy import or_
+
                 base_query = base_query.filter(or_(*conditions))
 
         # Time series data - daily interaction counts
-        time_series_query = base_query.with_entities(
-            func.date(Interaction.timestamp).label('date'),
-            func.count(Interaction.id).label('interactions')
-        ).group_by(func.date(Interaction.timestamp)).order_by(func.date(Interaction.timestamp))
+        time_series_query = (
+            base_query.with_entities(
+                func.date(Interaction.timestamp).label("date"),
+                func.count(Interaction.id).label("interactions"),
+            )
+            .group_by(func.date(Interaction.timestamp))
+            .order_by(func.date(Interaction.timestamp))
+        )
 
         time_series_results = time_series_query.all()
-        time_series = pd.DataFrame([
-            {'date': result.date, 'interactions': result.interactions}
-            for result in time_series_results
-        ])
+        time_series = pd.DataFrame(
+            [
+                {"date": result.date, "interactions": result.interactions}
+                for result in time_series_results
+            ]
+        )
 
         # Interaction type distribution
         type_dist_query = base_query.with_entities(
-            Interaction.type.label('type'),
-            func.count(Interaction.id).label('count')
+            Interaction.type.label("type"), func.count(Interaction.id).label("count")
         ).group_by(Interaction.type)
 
         type_dist_results = type_dist_query.all()
-        interaction_dist = pd.DataFrame([
-            {'type': result.type.value if result.type else 'Unknown', 'count': result.count}
-            for result in type_dist_results
-        ])
+        interaction_dist = pd.DataFrame(
+            [
+                {
+                    "type": result.type.value if result.type else "Unknown",
+                    "count": result.count,
+                }
+                for result in type_dist_results
+            ]
+        )
 
         # Top users
-        user_query = base_query.filter(
-            Interaction.user.isnot(None)
-        ).with_entities(
-            Interaction.user.label('user'),
-            func.count(Interaction.id).label('interactions')
-        ).group_by(Interaction.user).order_by(
-            func.count(Interaction.id).desc()
-        ).limit(10)
+        user_query = (
+            base_query.filter(Interaction.user.isnot(None))
+            .with_entities(
+                Interaction.user.label("user"),
+                func.count(Interaction.id).label("interactions"),
+            )
+            .group_by(Interaction.user)
+            .order_by(func.count(Interaction.id).desc())
+            .limit(10)
+        )
 
         user_results = user_query.all()
-        top_users = pd.DataFrame([
-            {'user': result.user, 'interactions': result.interactions}
-            for result in user_results
-        ])
+        top_users = pd.DataFrame(
+            [
+                {"user": result.user, "interactions": result.interactions}
+                for result in user_results
+            ]
+        )
 
         return time_series, interaction_dist, top_users
+
 
 def show():
     """Display the query builder dashboard."""
@@ -241,7 +295,6 @@ def show():
     available_users = get_users()
     available_actions = get_actions()
 
-
     # Full width layout with filters at top
     st.subheader("🛠️ Query Filters")
 
@@ -254,7 +307,7 @@ def show():
             "Organizations",
             options=available_orgs,
             key="selected_orgs",
-            help="Select organizations to include in the query"
+            help="Select organizations to include in the query",
         )
 
         # Interaction type filter
@@ -262,7 +315,7 @@ def show():
             "Interaction Types",
             options=[t.value for t in InteractionType],
             key="selected_types",
-            help="Select interaction types to include"
+            help="Select interaction types to include",
         )
 
     with col2:
@@ -271,7 +324,7 @@ def show():
             "Repositories",
             options=available_repos,
             key="selected_repos",
-            help="Select repositories to include in the query"
+            help="Select repositories to include in the query",
         )
 
         # Action filter
@@ -279,7 +332,7 @@ def show():
             "Actions",
             options=available_actions,
             key="selected_actions",
-            help="Select specific actions to filter by"
+            help="Select specific actions to filter by",
         )
 
     with col3:
@@ -288,7 +341,7 @@ def show():
             "Users",
             options=available_users,
             key="selected_users",
-            help="Select specific users to filter by"
+            help="Select specific users to filter by",
         )
 
         # Date range filter
@@ -297,7 +350,7 @@ def show():
             "Select date range",
             value=(datetime.now() - timedelta(days=30), datetime.now()),
             key="date_range",
-            help="Choose the date range for the query"
+            help="Choose the date range for the query",
         )
 
         # Star filter checkbox
@@ -305,7 +358,7 @@ def show():
             "⭐ Include stars",
             value=False,
             key="exclude_stars",
-            help="Include star interactions in query results"
+            help="Include star interactions in query results",
         )
 
     # Controls row
@@ -319,7 +372,7 @@ def show():
             index=0,
             key="logical_operator",
             help="Choose how to combine multiple filter conditions",
-            horizontal=True
+            horizontal=True,
         )
 
     with col2:
@@ -344,10 +397,13 @@ def show():
             st.session_state.selected_repos = []
             st.session_state.selected_actions = []
             st.session_state.selected_users = []
-            st.session_state.date_range = (datetime.now() - timedelta(days=30), datetime.now())
+            st.session_state.date_range = (
+                datetime.now() - timedelta(days=30),
+                datetime.now(),
+            )
             st.session_state.exclude_stars = False
             st.session_state.logical_operator = "AND"
-            if 'query_executed' in st.session_state:
+            if "query_executed" in st.session_state:
                 del st.session_state.query_executed
             st.success("✅ Form cleared!")
             st.rerun()
@@ -376,13 +432,17 @@ def show():
             query_parts.append(f"i.action IN ('{action_list}')")
 
         if len(date_range) == 2:
-            query_parts.append(f"i.timestamp BETWEEN '{date_range[0]}' AND '{date_range[1]}'")
+            query_parts.append(
+                f"i.timestamp BETWEEN '{date_range[0]}' AND '{date_range[1]}'"
+            )
 
         # Add star exclusion if not including stars
         if not exclude_stars:
             query_parts.append("i.type != 'star'")
 
-        where_clause = f" {logical_operator} ".join(query_parts) if query_parts else "1=1"
+        where_clause = (
+            f" {logical_operator} ".join(query_parts) if query_parts else "1=1"
+        )
 
         mock_sql = f"""SELECT *
 FROM interactions i
@@ -406,7 +466,9 @@ ORDER BY i.timestamp DESC;"""
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        query_name = st.text_input("Query Name", placeholder="Enter a name for this query")
+        query_name = st.text_input(
+            "Query Name", placeholder="Enter a name for this query"
+        )
         if st.button("Save Query", use_container_width=True):
             if query_name:
                 st.success(f"Query '{query_name}' saved successfully!")
@@ -419,7 +481,7 @@ ORDER BY i.timestamp DESC;"""
             "Pull Request Activity",
             "Issue Tracking Report",
             "Commit Frequency Analysis",
-            "Repository Comparison"
+            "Repository Comparison",
         ]
         selected_saved = st.selectbox("Load Saved Query", options=[""] + saved_queries)
         if st.button("Load Query", use_container_width=True):
@@ -433,7 +495,7 @@ ORDER BY i.timestamp DESC;"""
             "👥 Developer Leaderboard",
             "📊 Monthly Trends",
             "🔧 Issue Resolution Times",
-            "🌟 Popular Features"
+            "🌟 Popular Features",
         ]
         for i, template in enumerate(templates):
             if st.button(template, key=f"template_{i}", use_container_width=True):
@@ -461,7 +523,7 @@ ORDER BY i.timestamp DESC;"""
         """)
 
     # Results Section
-    if st.session_state.get('query_executed', False):
+    if st.session_state.get("query_executed", False):
         st.markdown("---")
         st.subheader("📊 Query Results")
 
@@ -475,7 +537,7 @@ ORDER BY i.timestamp DESC;"""
                 selected_actions,
                 date_range,
                 logical_operator,
-                not exclude_stars  # Invert because checkbox is "Include stars"
+                not exclude_stars,  # Invert because checkbox is "Include stars"
             )
         except Exception as e:
             st.error(f"Error executing query: {e}")
@@ -483,7 +545,9 @@ ORDER BY i.timestamp DESC;"""
 
         # Check if we have results
         if len(results_df) == 0:
-            st.info("No results found for the selected filters. Try adjusting your criteria or expanding the date range.")
+            st.info(
+                "No results found for the selected filters. Try adjusting your criteria or expanding the date range."
+            )
             return
 
         # Results summary
@@ -491,20 +555,20 @@ ORDER BY i.timestamp DESC;"""
         with col1:
             st.metric("Total Results", len(results_df))
         with col2:
-            if len(results_df) > 0 and 'User' in results_df.columns:
-                unique_users = results_df['User'].nunique()
+            if len(results_df) > 0 and "User" in results_df.columns:
+                unique_users = results_df["User"].nunique()
             else:
                 unique_users = 0
             st.metric("Unique Users", unique_users)
         with col3:
-            if len(results_df) > 0 and 'Repository' in results_df.columns:
-                unique_repos = results_df['Repository'].nunique()
+            if len(results_df) > 0 and "Repository" in results_df.columns:
+                unique_repos = results_df["Repository"].nunique()
             else:
                 unique_repos = 0
             st.metric("Unique Repos", unique_repos)
         with col4:
-            if len(results_df) > 0 and 'Timestamp' in results_df.columns:
-                unique_days = len(results_df['Timestamp'].dt.date.unique())
+            if len(results_df) > 0 and "Timestamp" in results_df.columns:
+                unique_days = len(results_df["Timestamp"].dt.date.unique())
             else:
                 unique_days = 0
             st.metric("Date Range", f"{unique_days} days")
@@ -523,7 +587,9 @@ ORDER BY i.timestamp DESC;"""
                 st.success("Excel export initiated! (Mock)")
 
         # Tabbed results view
-        tab1, tab2, tab3 = st.tabs(["📈 Visualizations", "📋 Data Table", "📊 Analytics"])
+        tab1, tab2, tab3 = st.tabs(
+            ["📈 Visualizations", "📋 Data Table", "📊 Analytics"]
+        )
 
         with tab1:
             st.subheader("Data Visualizations")
@@ -537,7 +603,7 @@ ORDER BY i.timestamp DESC;"""
                 selected_actions,
                 date_range,
                 logical_operator,
-                not exclude_stars  # Invert because checkbox is "Include stars"
+                not exclude_stars,  # Invert because checkbox is "Include stars"
             )
 
             # Time series chart
@@ -546,14 +612,17 @@ ORDER BY i.timestamp DESC;"""
                 if PLOTLY_AVAILABLE:
                     fig_time = px.line(
                         time_series,
-                        x='date',
-                        y='interactions',
-                        title='Daily Interaction Volume',
-                        labels={'interactions': 'Number of Interactions', 'date': 'Date'}
+                        x="date",
+                        y="interactions",
+                        title="Daily Interaction Volume",
+                        labels={
+                            "interactions": "Number of Interactions",
+                            "date": "Date",
+                        },
                     )
                     st.plotly_chart(fig_time, use_container_width=True)
                 else:
-                    st.line_chart(time_series.set_index('date'))
+                    st.line_chart(time_series.set_index("date"))
             else:
                 st.info("No time series data available for the selected filters.")
 
@@ -566,15 +635,17 @@ ORDER BY i.timestamp DESC;"""
                     if PLOTLY_AVAILABLE:
                         fig_pie = px.pie(
                             interaction_dist,
-                            values='count',
-                            names='type',
-                            title='Interaction Types'
+                            values="count",
+                            names="type",
+                            title="Interaction Types",
                         )
                         st.plotly_chart(fig_pie, use_container_width=True)
                     else:
-                        st.bar_chart(interaction_dist.set_index('type'))
+                        st.bar_chart(interaction_dist.set_index("type"))
                 else:
-                    st.info("No interaction type data available for the selected filters.")
+                    st.info(
+                        "No interaction type data available for the selected filters."
+                    )
 
             with col2:
                 st.markdown("**👥 Top Contributors**")
@@ -582,14 +653,14 @@ ORDER BY i.timestamp DESC;"""
                     if PLOTLY_AVAILABLE:
                         fig_bar = px.bar(
                             top_users,
-                            x='user',
-                            y='interactions',
-                            title='Most Active Users'
+                            x="user",
+                            y="interactions",
+                            title="Most Active Users",
                         )
                         fig_bar.update_layout(xaxis_tickangle=-45)
                         st.plotly_chart(fig_bar, use_container_width=True)
                     else:
-                        st.bar_chart(top_users.set_index('user'))
+                        st.bar_chart(top_users.set_index("user"))
                 else:
                     st.info("No user data available for the selected filters.")
 
@@ -606,7 +677,7 @@ ORDER BY i.timestamp DESC;"""
                     f"Page (1-{total_pages})",
                     min_value=1,
                     max_value=total_pages,
-                    value=1
+                    value=1,
                 )
 
             # Display paginated results
@@ -616,7 +687,7 @@ ORDER BY i.timestamp DESC;"""
             st.dataframe(
                 results_df.iloc[start_idx:end_idx],
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
             )
 
         with tab3:
@@ -641,10 +712,17 @@ ORDER BY i.timestamp DESC;"""
 
             # Trend analysis
             st.markdown("**📈 Trend Analysis**")
-            trend_data = pd.DataFrame({
-                'metric': ['Total Interactions', 'Unique Users', 'Repositories', 'Average Response Time'],
-                'current': [1247, 89, 23, 4.2],
-                'previous': [1156, 82, 21, 4.9],
-                'change': ['+7.9%', '+8.5%', '+9.5%', '-14.3%']
-            })
+            trend_data = pd.DataFrame(
+                {
+                    "metric": [
+                        "Total Interactions",
+                        "Unique Users",
+                        "Repositories",
+                        "Average Response Time",
+                    ],
+                    "current": [1247, 89, 23, 4.2],
+                    "previous": [1156, 82, 21, 4.9],
+                    "change": ["+7.9%", "+8.5%", "+9.5%", "-14.3%"],
+                }
+            )
             st.dataframe(trend_data, use_container_width=True, hide_index=True)

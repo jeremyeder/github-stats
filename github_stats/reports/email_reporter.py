@@ -27,7 +27,7 @@ class EmailReporter:
         smtp_port: int = 587,
         username: str | None = None,
         password: str | None = None,
-        use_tls: bool = True
+        use_tls: bool = True,
     ):
         """Initialize email reporter."""
         self.smtp_server = smtp_server
@@ -40,7 +40,7 @@ class EmailReporter:
         self,
         days: int = 7,
         organization: str | None = None,
-        repository: str | None = None
+        repository: str | None = None,
     ) -> dict[str, Any]:
         """Generate summary report data."""
         end_date = datetime.utcnow()
@@ -49,11 +49,9 @@ class EmailReporter:
         with get_db() as db:
             # Base query
             query = db.query(
-                Interaction.type,
-                func.count(Interaction.id).label("count")
+                Interaction.type, func.count(Interaction.id).label("count")
             ).filter(
-                Interaction.timestamp >= start_date,
-                Interaction.timestamp <= end_date
+                Interaction.timestamp >= start_date, Interaction.timestamp <= end_date
             )
 
             # Apply filters
@@ -74,65 +72,74 @@ class EmailReporter:
             total_interactions = sum(interaction_counts.values())
 
             # Get top repositories
-            repo_query = db.query(
-                Repository.full_name,
-                func.count(Interaction.id).label("count")
-            ).join(
-                Interaction, Repository.id == Interaction.repository_id
-            ).filter(
-                Interaction.timestamp >= start_date,
-                Interaction.timestamp <= end_date
+            repo_query = (
+                db.query(
+                    Repository.full_name, func.count(Interaction.id).label("count")
+                )
+                .join(Interaction, Repository.id == Interaction.repository_id)
+                .filter(
+                    Interaction.timestamp >= start_date,
+                    Interaction.timestamp <= end_date,
+                )
             )
 
             if organization:
                 org_obj = db.query(Organization).filter_by(name=organization).first()
                 if org_obj:
-                    repo_query = repo_query.filter(Repository.organization_id == org_obj.id)
+                    repo_query = repo_query.filter(
+                        Repository.organization_id == org_obj.id
+                    )
 
-            top_repos = repo_query.group_by(Repository.full_name).order_by(
-                func.count(Interaction.id).desc()
-            ).limit(DEFAULT_TOP_ITEMS).all()
+            top_repos = (
+                repo_query.group_by(Repository.full_name)
+                .order_by(func.count(Interaction.id).desc())
+                .limit(DEFAULT_TOP_ITEMS)
+                .all()
+            )
 
             # Get top users
             user_query = db.query(
-                Interaction.user,
-                func.count(Interaction.id).label("count")
+                Interaction.user, func.count(Interaction.id).label("count")
             ).filter(
                 Interaction.timestamp >= start_date,
                 Interaction.timestamp <= end_date,
-                Interaction.user.isnot(None)
+                Interaction.user.isnot(None),
             )
 
             if organization:
                 org_obj = db.query(Organization).filter_by(name=organization).first()
                 if org_obj:
-                    user_query = user_query.filter(Interaction.organization_id == org_obj.id)
+                    user_query = user_query.filter(
+                        Interaction.organization_id == org_obj.id
+                    )
 
             if repository:
                 repo_obj = db.query(Repository).filter_by(full_name=repository).first()
                 if repo_obj:
-                    user_query = user_query.filter(Interaction.repository_id == repo_obj.id)
+                    user_query = user_query.filter(
+                        Interaction.repository_id == repo_obj.id
+                    )
 
-            top_users = user_query.group_by(Interaction.user).order_by(
-                func.count(Interaction.id).desc()
-            ).limit(DEFAULT_TOP_ITEMS).all()
+            top_users = (
+                user_query.group_by(Interaction.user)
+                .order_by(func.count(Interaction.id).desc())
+                .limit(DEFAULT_TOP_ITEMS)
+                .all()
+            )
 
             return {
                 "period": {
                     "start_date": start_date.strftime("%Y-%m-%d"),
                     "end_date": end_date.strftime("%Y-%m-%d"),
-                    "days": days
+                    "days": days,
                 },
-                "filters": {
-                    "organization": organization,
-                    "repository": repository
-                },
+                "filters": {"organization": organization, "repository": repository},
                 "summary": {
                     "total_interactions": total_interactions,
                     "interaction_counts": {
                         interaction_type.value: count
                         for interaction_type, count in interaction_counts.items()
-                    }
+                    },
                 },
                 "top_repositories": [
                     {"name": repo_name, "count": count}
@@ -141,7 +148,7 @@ class EmailReporter:
                 "top_users": [
                     {"username": username, "count": count}
                     for username, count in top_users
-                ]
+                ],
             }
 
     def render_html_report(self, report_data: dict[str, Any]) -> str:
@@ -149,7 +156,7 @@ class EmailReporter:
         template_path = Path(__file__).parent.parent / "templates" / "email_report.html"
 
         try:
-            with open(template_path, encoding='utf-8') as f:
+            with open(template_path, encoding="utf-8") as f:
                 template_content = f.read()
 
             template = Template(template_content)
@@ -162,8 +169,8 @@ class EmailReporter:
             <html>
             <body>
             <h1>GitHub Stats Report</h1>
-            <p>Period: {report_data['period']['start_date']} to {report_data['period']['end_date']}</p>
-            <p>Total Interactions: {report_data['summary']['total_interactions']}</p>
+            <p>Period: {report_data["period"]["start_date"]} to {report_data["period"]["end_date"]}</p>
+            <p>Total Interactions: {report_data["summary"]["total_interactions"]}</p>
             <p>Template file missing - please check installation.</p>
             </body>
             </html>
@@ -177,38 +184,46 @@ class EmailReporter:
         lines = []
         lines.append("GitHub Stats Report")
         lines.append("=" * 50)
-        lines.append(f"Period: {report_data['period']['start_date']} to {report_data['period']['end_date']} ({report_data['period']['days']} days)")
+        lines.append(
+            f"Period: {report_data['period']['start_date']} to {report_data['period']['end_date']} ({report_data['period']['days']} days)"
+        )
 
-        if report_data['filters']['organization']:
+        if report_data["filters"]["organization"]:
             lines.append(f"Organization: {report_data['filters']['organization']}")
-        if report_data['filters']['repository']:
+        if report_data["filters"]["repository"]:
             lines.append(f"Repository: {report_data['filters']['repository']}")
 
         lines.append("")
         lines.append("SUMMARY")
         lines.append("-" * 20)
-        lines.append(f"Total Interactions: {report_data['summary']['total_interactions']}")
+        lines.append(
+            f"Total Interactions: {report_data['summary']['total_interactions']}"
+        )
         lines.append("")
 
-        for interaction_type, count in report_data['summary']['interaction_counts'].items():
+        for interaction_type, count in report_data["summary"][
+            "interaction_counts"
+        ].items():
             lines.append(f"{interaction_type.replace('_', ' ').title()}: {count}")
 
-        if report_data['top_repositories']:
+        if report_data["top_repositories"]:
             lines.append("")
             lines.append("TOP REPOSITORIES")
             lines.append("-" * 20)
-            for repo in report_data['top_repositories']:
+            for repo in report_data["top_repositories"]:
                 lines.append(f"{repo['name']}: {repo['count']} interactions")
 
-        if report_data['top_users']:
+        if report_data["top_users"]:
             lines.append("")
             lines.append("TOP CONTRIBUTORS")
             lines.append("-" * 20)
-            for user in report_data['top_users']:
+            for user in report_data["top_users"]:
                 lines.append(f"{user['username']}: {user['count']} interactions")
 
         lines.append("")
-        lines.append(f"Generated by GitHub Stats at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append(
+            f"Generated by GitHub Stats at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
 
         return "\n".join(lines)
 
@@ -217,7 +232,7 @@ class EmailReporter:
         to_emails: list[str],
         subject: str,
         report_data: dict[str, Any],
-        include_html: bool = True
+        include_html: bool = True,
     ) -> bool:
         """Send email report."""
         try:
@@ -261,7 +276,7 @@ class EmailReporter:
         days: int = 7,
         organization: str | None = None,
         repository: str | None = None,
-        subject_prefix: str = "GitHub Stats"
+        subject_prefix: str = "GitHub Stats",
     ) -> bool:
         """Generate and send summary report."""
         try:

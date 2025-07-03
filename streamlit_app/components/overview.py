@@ -17,9 +17,11 @@ def show():
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            total_devs = session.query(
-                func.count(func.distinct(Interaction.user))
-            ).filter(Interaction.user.isnot(None)).scalar()
+            total_devs = (
+                session.query(func.count(func.distinct(Interaction.user)))
+                .filter(Interaction.user.isnot(None))
+                .scalar()
+            )
             st.metric("Total Developers", total_devs)
 
         with col2:
@@ -31,9 +33,11 @@ def show():
             st.metric("Total Interactions", total_interactions)
 
         with col4:
-            recent_interactions = session.query(func.count(Interaction.id)).filter(
-                Interaction.timestamp >= datetime.now() - timedelta(days=7)
-            ).scalar()
+            recent_interactions = (
+                session.query(func.count(Interaction.id))
+                .filter(Interaction.timestamp >= datetime.now() - timedelta(days=7))
+                .scalar()
+            )
             st.metric("Interactions (Last 7 Days)", recent_interactions)
 
         st.markdown("---")
@@ -42,32 +46,35 @@ def show():
 
         with col1:
             st.subheader("📊 Recent Activity")
-            recent_activity = session.query(
-                Interaction.action,
-                func.count(Interaction.id).label('count')
-            ).filter(
-                Interaction.timestamp >= datetime.now() - timedelta(days=30)
-            ).group_by(Interaction.action).all()
+            recent_activity = (
+                session.query(
+                    Interaction.action, func.count(Interaction.id).label("count")
+                )
+                .filter(Interaction.timestamp >= datetime.now() - timedelta(days=30))
+                .group_by(Interaction.action)
+                .all()
+            )
 
             if recent_activity:
                 for activity in recent_activity:
-                    action_name = activity.action or 'Unknown'
+                    action_name = activity.action or "Unknown"
                     st.write(f"**{action_name}**: {activity.count}")
             else:
                 st.info("No activity in the last 30 days")
 
         with col2:
             st.subheader("👥 Top Contributors")
-            top_contributors = session.query(
-                Interaction.user,
-                func.count(Interaction.id).label('interaction_count')
-            ).filter(
-                Interaction.user.isnot(None)
-            ).group_by(
-                Interaction.user
-            ).order_by(
-                func.count(Interaction.id).desc()
-            ).limit(5).all()
+            top_contributors = (
+                session.query(
+                    Interaction.user,
+                    func.count(Interaction.id).label("interaction_count"),
+                )
+                .filter(Interaction.user.isnot(None))
+                .group_by(Interaction.user)
+                .order_by(func.count(Interaction.id).desc())
+                .limit(5)
+                .all()
+            )
 
             if top_contributors:
                 for contributor in top_contributors:
