@@ -53,7 +53,7 @@ class InteractionTracker:
             db.add(interaction)
             db.commit()
 
-            logger.info(f"Tracked API call: {method} {endpoint}")
+            logger.debug(f"Tracked API call: {method} {endpoint}")
 
     def track_organization(self, org_name: str) -> dict[str, Any]:
         """Track organization and fetch its details."""
@@ -185,7 +185,7 @@ class InteractionTracker:
                     extra_data={"count": len(commits)}
                 )
 
-                logger.info(f"Tracked {len(commits)} commits for {owner}/{repo}")
+                logger.debug(f"Tracked {len(commits)} commits for {owner}/{repo}")
 
         except Exception as e:
             logger.error(f"Failed to track commits for {owner}/{repo}: {e}")
@@ -246,7 +246,7 @@ class InteractionTracker:
                     extra_data={"count": len(interactions), "state": state}
                 )
 
-                logger.info(f"Tracked {len(interactions)} issues for {owner}/{repo}")
+                logger.debug(f"Tracked {len(interactions)} issues for {owner}/{repo}")
 
         except Exception as e:
             logger.error(f"Failed to track issues for {owner}/{repo}: {e}")
@@ -300,7 +300,7 @@ class InteractionTracker:
                     extra_data={"count": len(pulls), "state": state}
                 )
 
-                logger.info(f"Tracked {len(pulls)} pull requests for {owner}/{repo}")
+                logger.debug(f"Tracked {len(pulls)} pull requests for {owner}/{repo}")
 
         except Exception as e:
             logger.error(f"Failed to track pull requests for {owner}/{repo}: {e}")
@@ -437,7 +437,7 @@ class InteractionTracker:
             db.add(org)
             db.commit()
             db.refresh(org)
-            logger.info(f"Created new organization: {org_name}")
+            logger.debug(f"Created new organization: {org_name}")
 
         return org
 
@@ -476,7 +476,7 @@ class InteractionTracker:
             db.add(repo)
             db.commit()
             db.refresh(repo)
-            logger.info(f"Created new repository: {full_name}")
+            logger.debug(f"Created new repository: {full_name}")
 
         return repo
 
@@ -579,7 +579,7 @@ class InteractionTracker:
             "interactions_tracked",
             "Tracked {count} {interaction_type} for {repo}"
         )
-        logger.info(message.format(
+        logger.debug(message.format(
             count=count,
             interaction_type=operation_name,
             repo=f"{owner}/{repo}"
