@@ -2,8 +2,8 @@
 """Script to run the Streamlit application."""
 
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -12,7 +12,7 @@ def main():
     # Get the directory where this script is located
     script_dir = Path(__file__).parent.absolute()
     venv_python = script_dir / "venv" / "bin" / "python"
-    
+
     # Use virtual environment Python if it exists, otherwise fall back to system Python
     if venv_python.exists():
         python_executable = str(venv_python)
@@ -20,11 +20,11 @@ def main():
     else:
         python_executable = sys.executable
         print(f"Using system Python: {python_executable}")
-    
+
     try:
         # Change to the script directory to ensure relative paths work
         os.chdir(script_dir)
-        
+
         subprocess.run([
             python_executable, "-m", "streamlit", "run",
             "streamlit_app/app.py",
@@ -35,7 +35,7 @@ def main():
         print("\nStreamlit app stopped.")
     except Exception as e:
         print(f"Error running Streamlit: {e}")
-        print(f"Make sure Streamlit is installed: pip install streamlit")
+        print("Make sure Streamlit is installed: pip install streamlit")
         sys.exit(1)
 
 

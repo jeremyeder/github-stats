@@ -2,28 +2,27 @@
 
 import logging
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import BaseSettings, Field, validator
 
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     github_token: str = Field(..., env="GITHUB_TOKEN")
     database_url: str = Field(
-        "sqlite:///./github_stats.db", 
+        "sqlite:///./github_stats.db",
         env="DATABASE_URL"
     )
     log_level: str = Field("WARNING", env="LOG_LEVEL")
-    
+
     # Email configuration
-    smtp_server: Optional[str] = Field(None, env="SMTP_SERVER")
+    smtp_server: str | None = Field(None, env="SMTP_SERVER")
     smtp_port: int = Field(587, env="SMTP_PORT")
-    smtp_username: Optional[str] = Field(None, env="SMTP_USERNAME")
-    smtp_password: Optional[str] = Field(None, env="SMTP_PASSWORD")
+    smtp_username: str | None = Field(None, env="SMTP_USERNAME")
+    smtp_password: str | None = Field(None, env="SMTP_PASSWORD")
     smtp_use_tls: bool = Field(True, env="SMTP_USE_TLS")
-    
+
     @validator("log_level")
     def validate_log_level(cls, v: str) -> str:
         """Validate log level is valid."""
@@ -32,16 +31,16 @@ class Settings(BaseSettings):
         if v not in valid_levels:
             raise ValueError(f"Invalid log level: {v}")
         return v
-    
+
     class Config:
         """Pydantic config."""
-        
+
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()

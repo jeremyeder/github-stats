@@ -40,8 +40,10 @@ github-stats = "github_stats.cli:app"
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "B", "C90", "UP", "S"]
-ignore = ["S101"]  # Allow assert in tests
+ignore = ["S101", "S603"]  # Allow assert in tests, subprocess calls
 
 [tool.mypy]
 python_version = "3.11"
