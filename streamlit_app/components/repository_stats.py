@@ -3,8 +3,14 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
+
+# Try to import plotly, fall back to basic charts if not available
+try:
+    import plotly.express as px
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
 from sqlalchemy import func
 
 from github_stats.models.interactions import Interaction, Repository
@@ -80,26 +86,37 @@ def show():
                     for i in interactions_data
                 ])
 
-                fig = px.line(
-                    df,
-                    x='date',
-                    y='count',
-                    color='action_type',
-                    title=f"Interactions over time for {selected_repo}",
-                    labels={'count': 'Number of Interactions', 'date': 'Date'}
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                if PLOTLY_AVAILABLE:
+                    fig = px.line(
+                        df,
+                        x='date',
+                        y='count',
+                        color='action_type',
+                        title=f"Interactions over time for {selected_repo}",
+                        labels={'count': 'Number of Interactions', 'date': 'Date'}
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
 
-                st.subheader("📈 Interaction Breakdown")
+                    st.subheader("📈 Interaction Breakdown")
 
-                action_summary = df.groupby('action_type')['count'].sum().reset_index()
-                fig_pie = px.pie(
-                    action_summary,
-                    values='count',
-                    names='action_type',
-                    title="Distribution of Interaction Types"
-                )
-                st.plotly_chart(fig_pie, use_container_width=True)
+                    action_summary = df.groupby('action_type')['count'].sum().reset_index()
+                    fig_pie = px.pie(
+                        action_summary,
+                        values='count',
+                        names='action_type',
+                        title="Distribution of Interaction Types"
+                    )
+                    st.plotly_chart(fig_pie, use_container_width=True)
+                else:
+                    # Fallback to basic Streamlit charts
+                    pivot_df = df.pivot_table(values='count', index='date', columns='action_type', fill_value=0)
+                    st.line_chart(pivot_df)
+                    
+                    st.subheader("📈 Interaction Breakdown")
+                    action_summary = df.groupby('action_type')['count'].sum().reset_index()
+                    st.write("**Distribution of Interaction Types**")
+                    for _, row in action_summary.iterrows():
+                        st.write(f"- {row['action_type']}: {row['count']}")
             else:
                 st.info("No interactions found for the selected time range.")
 
@@ -125,12 +142,15 @@ def show():
                     for c in top_contributors
                 ])
 
-                fig_bar = px.bar(
-                    contrib_df,
-                    x='Developer',
-                    y='Interactions',
-                    title="Top 10 Contributors"
-                )
-                st.plotly_chart(fig_bar, use_container_width=True)
+                if PLOTLY_AVAILABLE:
+                    fig_bar = px.bar(
+                        contrib_df,
+                        x='Developer',
+                        y='Interactions',
+                        title="Top 10 Contributors"
+                    )
+                    st.plotly_chart(fig_bar, use_container_width=True)
+                else:
+                    st.bar_chart(contrib_df.set_index('Developer'))
             else:
                 st.info("No contributors found for this repository.")

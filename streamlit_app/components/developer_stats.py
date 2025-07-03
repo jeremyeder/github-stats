@@ -3,8 +3,14 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
+
+# Try to import plotly, fall back to basic charts if not available
+try:
+    import plotly.express as px
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
 from sqlalchemy import func
 
 from github_stats.models.interactions import Interaction, Repository
@@ -107,14 +113,17 @@ def show():
                     for a in activity_data
                 ])
 
-                fig = px.bar(
-                    df,
-                    x='date',
-                    y='interactions',
-                    title=f"Daily Activity for {selected_dev}",
-                    labels={'interactions': 'Number of Interactions', 'date': 'Date'}
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                if PLOTLY_AVAILABLE:
+                    fig = px.bar(
+                        df,
+                        x='date',
+                        y='interactions',
+                        title=f"Daily Activity for {selected_dev}",
+                        labels={'interactions': 'Number of Interactions', 'date': 'Date'}
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.bar_chart(df.set_index('date'))
             else:
                 st.info("No activity found for the selected time range.")
 
@@ -140,13 +149,18 @@ def show():
                         for a in action_dist
                     ])
 
-                    fig_pie = px.pie(
-                        action_df,
-                        values='Count',
-                        names='Action Type',
-                        title="Distribution of Actions"
-                    )
-                    st.plotly_chart(fig_pie, use_container_width=True)
+                    if PLOTLY_AVAILABLE:
+                        fig_pie = px.pie(
+                            action_df,
+                            values='Count',
+                            names='Action Type',
+                            title="Distribution of Actions"
+                        )
+                        st.plotly_chart(fig_pie, use_container_width=True)
+                    else:
+                        st.write("**Distribution of Actions**")
+                        for _, row in action_df.iterrows():
+                            st.write(f"- {row['Action Type']}: {row['Count']}")
                 else:
                     st.info("No actions found.")
 
