@@ -108,7 +108,7 @@ def execute_query(
         if selected_actions:
             conditions.append(Interaction.action.in_(selected_actions))
 
-        if len(date_range) == 2:
+        if len(date_range) == 2 and date_range[0] is not None and date_range[1] is not None:
             start_date, end_date = date_range
             # Convert dates to datetime for comparison
             start_datetime = datetime.combine(start_date, datetime.min.time())
@@ -191,7 +191,7 @@ def generate_chart_data(
         if selected_actions:
             conditions.append(Interaction.action.in_(selected_actions))
 
-        if len(date_range) == 2:
+        if len(date_range) == 2 and date_range[0] is not None and date_range[1] is not None:
             start_date, end_date = date_range
             start_datetime = datetime.combine(start_date, datetime.min.time())
             end_datetime = datetime.combine(end_date, datetime.max.time())
@@ -431,7 +431,7 @@ def show():
             action_list = "', '".join(selected_actions)
             query_parts.append(f"i.action IN ('{action_list}')")
 
-        if len(date_range) == 2:
+        if len(date_range) == 2 and date_range[0] is not None and date_range[1] is not None:
             query_parts.append(
                 f"i.timestamp BETWEEN '{date_range[0]}' AND '{date_range[1]}'"
             )

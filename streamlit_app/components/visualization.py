@@ -53,11 +53,22 @@ def create_sidebar_filters() -> dict:
         help="Select the date range for analysis",
     )
 
+    # Handle date range input safely
     if isinstance(date_range, tuple) and len(date_range) == 2:
         start_date, end_date = date_range
+    elif hasattr(date_range, '__iter__') and len(date_range) > 0:
+        start_date = date_range[0] if date_range[0] is not None else datetime.now().date() - timedelta(days=30)
+        end_date = date_range[1] if len(date_range) > 1 and date_range[1] is not None else datetime.now().date()
     else:
-        start_date = date_range
-        end_date = date_range
+        # Fallback to default range if date_range is None or empty
+        start_date = datetime.now().date() - timedelta(days=30)
+        end_date = datetime.now().date()
+
+    # Ensure dates are valid date objects
+    if start_date is None:
+        start_date = datetime.now().date() - timedelta(days=30)
+    if end_date is None:
+        end_date = datetime.now().date()
 
     # Interaction type filter
     st.sidebar.subheader("🔧 Interaction Types")
