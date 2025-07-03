@@ -323,16 +323,19 @@ def show():
     with col4:
         st.markdown("**Actions**")
         # Clear form button
-        if st.button("🗑️ Clear Form", use_container_width=True):
-            # Clear all session state keys for form fields
-            keys_to_clear = [
-                'selected_orgs', 'selected_types', 'selected_repos', 
-                'selected_actions', 'selected_users', 'date_range',
-                'exclude_stars', 'logical_operator', 'query_executed'
-            ]
-            for key in keys_to_clear:
-                if key in st.session_state:
-                    del st.session_state[key]
+        if st.button("🗑️ Clear Form", use_container_width=True, key="clear_form_btn"):
+            # Reset form fields to default values
+            st.session_state.selected_orgs = []
+            st.session_state.selected_types = []
+            st.session_state.selected_repos = []
+            st.session_state.selected_actions = []
+            st.session_state.selected_users = []
+            st.session_state.date_range = (datetime.now() - timedelta(days=30), datetime.now())
+            st.session_state.exclude_stars = False
+            st.session_state.logical_operator = "AND"
+            if 'query_executed' in st.session_state:
+                del st.session_state.query_executed
+            st.success("✅ Form cleared!")
             st.rerun()
 
     # Conditional Query Preview Section
