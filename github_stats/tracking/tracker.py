@@ -43,13 +43,9 @@ class InteractionTracker:
                     db, repository, organization
                 ).id
 
-            interaction = Interaction(
-                type=InteractionType.API_CALL,
-                organization_id=org_id,
-                repository_id=repo_id,
-                action=f"{method} {endpoint}",
-                extra_data=extra_data or {},
-            )
+            # Skip API call tracking to avoid synthetic timestamps
+            # API calls are meta-interactions and don't need to be tracked as data points
+            return
 
             db.add(interaction)
             db.commit()
@@ -355,13 +351,13 @@ class InteractionTracker:
 
             return {
                 "timestamp": star_timestamp,  # Use real GitHub timestamp
-                "user": star.get("login"),
+                "user": star.get("user", {}).get("login") if star.get("user") else star.get("login"),
                 "action": "star",
-                "resource_id": str(star.get("id")),
-                "resource_url": star.get("html_url"),
+                "resource_id": str(star.get("user", {}).get("id")) if star.get("user") else str(star.get("id")),
+                "resource_url": star.get("user", {}).get("html_url") if star.get("user") else star.get("html_url"),
                 "extra_data": {
                     "starred_at": starred_at_str,
-                    "user_type": star.get("type"),
+                    "user_type": star.get("user", {}).get("type") if star.get("user") else star.get("type"),
                 },
             }
 
@@ -563,6 +559,12 @@ class InteractionTracker:
 
         for item in items:
             interaction_data = extract_fn(item)
+            
+            # Skip interactions without valid timestamps to avoid synthetic data
+            if interaction_data.get("timestamp") is None:
+                logger.debug(f"Skipping {interaction_type} interaction without timestamp")
+                continue
+                
             interaction = Interaction(
                 type=interaction_type,
                 repository_id=repo_obj.id,

@@ -215,14 +215,16 @@ class GitHubClient:
     def get_repository_stargazers(
         self, owner: str, repo: str, per_page: int = 100
     ) -> list[dict[str, Any]]:
-        """Get repository stargazers."""
+        """Get repository stargazers with timestamps."""
         stars = []
         page = 1
 
         while True:
             params = {"per_page": per_page, "page": page}
+            # Need special headers to get starred_at timestamps
+            headers = {"Accept": "application/vnd.github.v3.star+json"}
             response = self._request(
-                "GET", f"/repos/{owner}/{repo}/stargazers", params=params
+                "GET", f"/repos/{owner}/{repo}/stargazers", params=params, headers=headers
             )
 
             if not response:
