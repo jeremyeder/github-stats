@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from streamlit_app.pages import developer_stats, overview, repository_stats
+from streamlit_app.components import developer_stats, overview, repository_stats
 
 
 def main():
