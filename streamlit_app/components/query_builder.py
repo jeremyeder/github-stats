@@ -104,7 +104,7 @@ def execute_query(selected_orgs, selected_repos, selected_users, selected_types,
                 query = query.filter(or_(*conditions))
 
         # Execute query
-        results = query.order_by(Interaction.timestamp.desc()).limit(1000).all()
+        results = query.order_by(Interaction.timestamp.desc()).all()
 
         # Convert to DataFrame
         data = []
@@ -337,8 +337,7 @@ FROM interactions i
 LEFT JOIN repositories r ON i.repository_id = r.id
 LEFT JOIN organizations o ON i.organization_id = o.id
 WHERE {where_clause}
-ORDER BY i.timestamp DESC
-LIMIT 1000;"""
+ORDER BY i.timestamp DESC;"""
 
         st.code(mock_sql, language="sql")
 
