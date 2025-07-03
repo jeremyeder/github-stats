@@ -41,6 +41,32 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+def check_db_has_data() -> dict[str, int]:
+    """Check if database has existing data.
+    
+    Returns:
+        Dictionary with counts of each data type
+    """
+    from ..models.interactions import Interaction, Organization, Repository
+    
+    counts = {
+        "organizations": 0,
+        "repositories": 0, 
+        "interactions": 0
+    }
+    
+    try:
+        with get_db() as db:
+            counts["organizations"] = db.query(Organization).count()
+            counts["repositories"] = db.query(Repository).count()
+            counts["interactions"] = db.query(Interaction).count()
+    except Exception:
+        # Database doesn't exist yet or has no tables
+        pass
+    
+    return counts
+
+
 def init_db() -> None:
     """Initialize database tables."""
     engine = get_db_engine()
