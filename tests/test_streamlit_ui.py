@@ -24,11 +24,11 @@ class TestStreamlitApp:
         at.run()
 
         # Check that sidebar radio button exists
-        assert len(at.radio) > 0, "No radio buttons found"
+        assert len(at.sidebar.radio) > 0, "No radio buttons found in sidebar"
 
         # Check that all expected pages are in the radio options
-        radio_options = at.radio[0].options
-        expected_pages = ["Query Builder", "Repository Stats", "Developer Stats"]
+        radio_options = at.sidebar.radio[0].options
+        expected_pages = ["Query Builder", "Advanced Analytics", "Repository Stats", "Developer Stats"]
 
         for page in expected_pages:
             assert page in radio_options, f"Page '{page}' not found in navigation"
@@ -39,7 +39,7 @@ class TestStreamlitApp:
         at.run()
 
         # Check that Query Builder is selected by default
-        assert at.radio[0].value == "Query Builder"
+        assert at.sidebar.radio[0].value == "Query Builder"
 
         # Check that query builder content is displayed
         headers = [h.value for h in at.header]
@@ -51,7 +51,7 @@ class TestStreamlitApp:
         at.run()
 
         # Navigate to Repository Stats
-        at.radio[0].set_value("Repository Stats").run()
+        at.sidebar.radio[0].set_value("Repository Stats").run()
 
         # Check that no exceptions occurred
         assert not at.exception, f"Repository Stats page crashed with: {at.exception}"
@@ -66,7 +66,7 @@ class TestStreamlitApp:
         at.run()
 
         # Navigate to Developer Stats
-        at.radio[0].set_value("Developer Stats").run()
+        at.sidebar.radio[0].set_value("Developer Stats").run()
 
         # Check that no exceptions occurred
         assert not at.exception, f"Developer Stats page crashed with: {at.exception}"
@@ -76,15 +76,16 @@ class TestStreamlitApp:
         assert any("Developer Statistics" in str(h) for h in headers)
 
     def test_empty_data_handling_overview(self, mock_empty_db):
-        """Test that Overview page handles empty data gracefully."""
+        """Test that Query Builder (default page) handles empty data gracefully."""
         at = AppTest.from_file("streamlit_app/app.py")
         at.run()
 
         # Should not crash with empty data
         assert not at.exception
 
-        # Check that metrics are displayed (even if 0)
-        assert len(at.metric) > 0, "No metrics found on overview page"
+        # Query Builder is the default page, check it loads properly
+        headers = [h.value for h in at.header]
+        assert any("Query Builder" in str(h) for h in headers)
 
     def test_empty_data_handling_repository_stats(self, mock_empty_db):
         """Test that Repository Stats page handles empty data gracefully."""
@@ -92,7 +93,7 @@ class TestStreamlitApp:
         at.run()
 
         # Navigate to Repository Stats
-        at.radio[0].set_value("Repository Stats").run()
+        at.sidebar.radio[0].set_value("Repository Stats").run()
 
         # Should not crash with empty data
         assert not at.exception
@@ -107,7 +108,7 @@ class TestStreamlitApp:
         at.run()
 
         # Navigate to Developer Stats
-        at.radio[0].set_value("Developer Stats").run()
+        at.sidebar.radio[0].set_value("Developer Stats").run()
 
         # Should not crash with empty data
         assert not at.exception
@@ -122,7 +123,7 @@ class TestStreamlitApp:
         at.run()
 
         # Navigate to Query Builder
-        at.radio[0].set_value("Query Builder").run()
+        at.sidebar.radio[0].set_value("Query Builder").run()
 
         # Check that no exceptions occurred
         assert not at.exception, f"Query Builder page crashed with: {at.exception}"
@@ -140,7 +141,7 @@ class TestStreamlitApp:
         at.run()
 
         # Navigate to Query Builder
-        at.radio[0].set_value("Query Builder").run()
+        at.sidebar.radio[0].set_value("Query Builder").run()
 
         # Should not crash with empty data
         assert not at.exception
