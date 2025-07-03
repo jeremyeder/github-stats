@@ -36,7 +36,7 @@ def get_filter_options():
 
 def create_sidebar_filters() -> dict:
     """Create sidebar filters and return filter values."""
-    st.sidebar.title("🎛️ Visualization Controls")
+    st.sidebar.markdown("### 🎛️ Visualization Controls")
 
     # Get filter options
     options = get_filter_options()
@@ -317,6 +317,62 @@ def show():
                     )
                 else:
                     st.warning("Please select at least one column to display")
+
+            # Show All Usernames feature
+            with st.expander("👥 Show All Usernames", expanded=False):
+                st.subheader("All Unique Users")
+                
+                # Get all unique users with their interaction counts
+                all_users_data = (
+                    df.groupby("user")
+                    .agg({
+                        "id": "count",
+                        "repository_name": "nunique",
+                        "timestamp": ["min", "max"]
+                    })
+                    .round(2)
+                )
+                
+                # Flatten column names
+                all_users_data.columns = ["Total Interactions", "Unique Repos", "First Activity", "Last Activity"]
+                all_users_data = all_users_data.sort_values("Total Interactions", ascending=False)
+                all_users_data = all_users_data.reset_index()
+                
+                # Add search functionality
+                search_user = st.text_input("🔍 Search users:", placeholder="Enter username to search...")
+                
+                if search_user:
+                    filtered_users = all_users_data[
+                        all_users_data["user"].str.contains(search_user, case=False, na=False)
+                    ]
+                else:
+                    filtered_users = all_users_data
+                
+                st.info(f"Showing {len(filtered_users)} of {len(all_users_data)} total users")
+                
+                # Display users table with pagination
+                users_per_page = st.selectbox("Users per page:", [25, 50, 100], index=0, key="users_pagination")
+                total_user_pages = (len(filtered_users) - 1) // users_per_page + 1
+                
+                if total_user_pages > 1:
+                    user_page = st.number_input(
+                        f"Page (1 of {total_user_pages}):",
+                        min_value=1,
+                        max_value=total_user_pages,
+                        value=1,
+                        key="user_page_selector"
+                    )
+                    start_idx = (user_page - 1) * users_per_page
+                    end_idx = start_idx + users_per_page
+                    display_users = filtered_users.iloc[start_idx:end_idx]
+                else:
+                    display_users = filtered_users
+                
+                st.dataframe(
+                    display_users,
+                    use_container_width=True,
+                    height=400,
+                )
 
         except Exception as e:
             st.error(f"Error loading data: {str(e)}")

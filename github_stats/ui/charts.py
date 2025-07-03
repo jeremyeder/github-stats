@@ -36,7 +36,7 @@ class ChartGenerator:
                 query = query.filter(
                     Interaction.organization_id.in_(filters["organizations"])
                 )
-            if not filters.get("include_stars", True):  # Default to include stars
+            if not filters.get("include_stars", False):  # Default to exclude stars
                 query = query.filter(Interaction.type != InteractionType.STAR)
 
         interactions = query.all()
@@ -71,7 +71,7 @@ class ChartGenerator:
     def create_time_series_chart(
         self, df: pd.DataFrame, groupby: str = "date"
     ) -> go.Figure:
-        """Create time series line chart showing interactions over time by type."""
+        """Create time series stacked bar chart showing interactions over time by type."""
         if df.empty:
             fig = go.Figure()
             fig.add_annotation(text="No data available", x=0.5, y=0.5, showarrow=False)
@@ -80,7 +80,7 @@ class ChartGenerator:
         # Group by time period and interaction type
         time_series = df.groupby([groupby, "type"]).size().reset_index(name="count")
 
-        fig = px.line(
+        fig = px.bar(
             time_series,
             x=groupby,
             y="count",
@@ -94,6 +94,7 @@ class ChartGenerator:
             yaxis_title="Number of Interactions",
             legend_title="Interaction Type",
             hovermode="x unified",
+            barmode="stack",  # Make bars stacked
         )
 
         return fig
@@ -271,13 +272,21 @@ class ChartGenerator:
         return fig
 
     def create_interaction_type_pie(self, df: pd.DataFrame) -> go.Figure:
-        """Create pie chart showing distribution of interaction types."""
+        """Create pie chart showing distribution of meaningful interaction types."""
         if df.empty or "type" not in df.columns:
             fig = go.Figure()
             fig.add_annotation(text="No data available", x=0.5, y=0.5, showarrow=False)
             return fig
 
-        type_counts = df["type"].value_counts()
+        # Filter out less meaningful interaction types for cleaner visualization
+        filtered_df = df[~df["type"].isin(["api_call", "fork", "workflow_run"])]
+        
+        if filtered_df.empty:
+            fig = go.Figure()
+            fig.add_annotation(text="No meaningful interaction data", x=0.5, y=0.5, showarrow=False)
+            return fig
+
+        type_counts = filtered_df["type"].value_counts()
 
         fig = go.Figure(
             data=[go.Pie(labels=type_counts.index, values=type_counts.values, hole=0.3)]

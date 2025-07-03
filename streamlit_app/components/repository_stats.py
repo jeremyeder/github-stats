@@ -14,7 +14,7 @@ except ImportError:
     PLOTLY_AVAILABLE = False
 from sqlalchemy import func
 
-from github_stats.models.interactions import Interaction, Repository
+from github_stats.models.interactions import Interaction, InteractionType, Repository
 from github_stats.utils.database import get_db
 
 
@@ -30,25 +30,39 @@ def show():
             st.warning("No repositories found. Start tracking some repositories first!")
             return
 
-        selected_repo = st.selectbox("Select a repository:", repo_names)
+        selected_repos = st.multiselect(
+            "Select repositories:", 
+            repo_names, 
+            default=repo_names[:1] if repo_names else [],
+            help="Select one or more repositories to analyze"
+        )
 
-        if selected_repo:
-            repo = session.query(Repository).filter_by(full_name=selected_repo).first()
+        if selected_repos:
+            repos = session.query(Repository).filter(Repository.full_name.in_(selected_repos)).all()
+            repo_ids = [repo.id for repo in repos]
 
+            # Display aggregate metrics for selected repositories
             col1, col2, col3 = st.columns(3)
 
             with col1:
-                st.metric("Stars", getattr(repo, "stars_count", "N/A"))
+                total_stars = sum(getattr(repo, "stars_count", 0) or 0 for repo in repos)
+                st.metric("Total Stars", total_stars)
 
             with col2:
-                st.metric("Forks", getattr(repo, "forks_count", "N/A"))
+                total_forks = sum(getattr(repo, "forks_count", 0) or 0 for repo in repos)
+                st.metric("Total Forks", total_forks)
 
             with col3:
-                st.metric("Open Issues", getattr(repo, "open_issues_count", "N/A"))
+                total_issues = sum(getattr(repo, "open_issues_count", 0) or 0 for repo in repos)
+                st.metric("Total Open Issues", total_issues)
 
             st.markdown("---")
 
-            st.subheader("📊 Interaction Timeline")
+            repo_names_str = ", ".join(selected_repos)
+            if len(selected_repos) == 1:
+                st.subheader(f"📊 Interaction Timeline - {repo_names_str}")
+            else:
+                st.subheader(f"📊 Interaction Timeline - {len(selected_repos)} Repositories")
 
             time_range = st.selectbox(
                 "Time Range:",
@@ -72,8 +86,9 @@ def show():
                     func.count(Interaction.id).label("count"),
                 )
                 .filter(
-                    Interaction.repository_id == repo.id,
+                    Interaction.repository_id.in_(repo_ids),
                     Interaction.timestamp >= date_filter,
+                    Interaction.type != InteractionType.STAR,  # Exclude stars by default
                 )
                 .group_by(func.date(Interaction.timestamp), Interaction.action)
                 .all()
@@ -92,12 +107,13 @@ def show():
                 )
 
                 if PLOTLY_AVAILABLE:
+                    title = f"Interactions over time for {repo_names_str}" if len(selected_repos) == 1 else f"Interactions over time for {len(selected_repos)} repositories"
                     fig = px.line(
                         df,
                         x="date",
                         y="count",
                         color="action_type",
-                        title=f"Interactions over time for {selected_repo}",
+                        title=title,
                         labels={"count": "Number of Interactions", "date": "Date"},
                     )
                     st.plotly_chart(fig, use_container_width=True)
@@ -136,7 +152,8 @@ def show():
 
             st.markdown("---")
 
-            st.subheader("👥 Top Contributors to this Repository")
+            contributors_title = "👥 Top Contributors to these Repositories" if len(selected_repos) > 1 else f"👥 Top Contributors to {repo_names_str}"
+            st.subheader(contributors_title)
 
             top_contributors = (
                 session.query(
@@ -144,7 +161,9 @@ def show():
                     func.count(Interaction.id).label("interaction_count"),
                 )
                 .filter(
-                    Interaction.repository_id == repo.id, Interaction.user.isnot(None)
+                    Interaction.repository_id.in_(repo_ids), 
+                    Interaction.user.isnot(None),
+                    Interaction.type != InteractionType.STAR,  # Exclude stars by default
                 )
                 .group_by(Interaction.user)
                 .order_by(func.count(Interaction.id).desc())
