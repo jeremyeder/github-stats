@@ -342,46 +342,6 @@ LIMIT 1000;"""
     else:
         st.warning("⚠️ No filters selected - will return all data")
 
-    # Saved Queries Section
-    st.markdown("---")
-    st.subheader("💾 Saved Queries")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        query_name = st.text_input("Query Name", placeholder="Enter a name for this query")
-        if st.button("Save Query", use_container_width=True):
-            if query_name:
-                st.success(f"Query '{query_name}' saved successfully!")
-            else:
-                st.error("Please enter a query name")
-
-    with col2:
-        saved_queries = [
-            "Top Contributors Last Month",
-            "Pull Request Activity",
-            "Issue Tracking Report",
-            "Commit Frequency Analysis",
-            "Repository Comparison"
-        ]
-        selected_saved = st.selectbox("Load Saved Query", options=[""] + saved_queries)
-        if st.button("Load Query", use_container_width=True):
-            if selected_saved:
-                st.success(f"Loaded query: {selected_saved}")
-
-    with col3:
-        st.write("**Query Templates:**")
-        templates = [
-            "🚀 Most Active Repositories",
-            "👥 Developer Leaderboard",
-            "📊 Monthly Trends",
-            "🔧 Issue Resolution Times",
-            "🌟 Popular Features"
-        ]
-        for i, template in enumerate(templates):
-            if st.button(template, key=f"template_{i}", use_container_width=True):
-                st.info(f"Applied template: {template}")
-
     # Results Section
     if st.session_state.get('query_executed', False):
         st.markdown("---")
@@ -568,6 +528,46 @@ LIMIT 1000;"""
                 'change': ['+7.9%', '+8.5%', '+9.5%', '-14.3%']
             })
             st.dataframe(trend_data, use_container_width=True, hide_index=True)
+
+    # Saved Queries Section
+    st.markdown("---")
+    st.subheader("💾 Saved Queries")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        query_name = st.text_input("Query Name", placeholder="Enter a name for this query")
+        if st.button("Save Query", use_container_width=True):
+            if query_name:
+                st.success(f"Query '{query_name}' saved successfully!")
+            else:
+                st.error("Please enter a query name")
+
+    with col2:
+        saved_queries = [
+            "Top Contributors Last Month",
+            "Pull Request Activity",
+            "Issue Tracking Report",
+            "Commit Frequency Analysis",
+            "Repository Comparison"
+        ]
+        selected_saved = st.selectbox("Load Saved Query", options=[""] + saved_queries)
+        if st.button("Load Query", use_container_width=True):
+            if selected_saved:
+                st.success(f"Loaded query: {selected_saved}")
+
+    with col3:
+        st.write("**Query Templates:**")
+        templates = [
+            "🚀 Most Active Repositories",
+            "👥 Developer Leaderboard",
+            "📊 Monthly Trends",
+            "🔧 Issue Resolution Times",
+            "🌟 Popular Features"
+        ]
+        for i, template in enumerate(templates):
+            if st.button(template, key=f"template_{i}", use_container_width=True):
+                st.info(f"Applied template: {template}")
 
     # Help section
     st.markdown("---")
