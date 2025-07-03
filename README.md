@@ -23,6 +23,15 @@ cd github-stats
 
 # Install in development mode
 pip install -e ".[dev]"
+
+# Install system dependencies (jq for JSON parsing)
+brew install jq
+
+# Install geckodriver for web automation (optional)
+./install_geckodriver.sh
+
+# Setup environment (optional convenience script)
+./setup_env.sh
 ```
 
 ## Configuration
@@ -174,6 +183,13 @@ The dashboard will be available at http://localhost:8501
   - Activity timeline
   - Action type breakdown
   - Detailed activity log
+- **Query Builder**: Advanced custom query interface featuring:
+  - Interactive filters for organizations, repositories, users, and interaction types
+  - Date range selection and logical operators (AND/OR)
+  - Real-time SQL query preview with validation
+  - Results visualization with charts and analytics
+  - Export capabilities (CSV, JSON, Excel)
+  - Saved query templates and history management
 
 ## Database Schema
 
@@ -184,6 +200,25 @@ The application uses SQLite with the following main tables:
 - **interactions**: Records of all GitHub interactions
 
 ## Development
+
+### Development Tools
+
+This project includes several helper scripts:
+
+- `install_geckodriver.sh`: Installs geckodriver for web automation testing
+- `setup_env.sh`: Sets up the development environment with proper PATH and virtual environment
+
+### System Dependencies
+
+- **jq**: JSON command-line processor for parsing GitHub API responses
+  ```bash
+  brew install jq
+  ```
+
+- **geckodriver**: WebDriver for Firefox (optional, for web automation)
+  ```bash
+  ./install_geckodriver.sh
+  ```
 
 ### Run tests
 
