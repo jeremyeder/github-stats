@@ -159,6 +159,9 @@ def show():
     """Main visualization dashboard page."""
     st.title("📈 Advanced Analytics Dashboard")
     st.markdown("Comprehensive visualization and analysis of GitHub interactions")
+    
+    # Data integrity info
+    st.info("📊 **Data Integrity**: Showing only interactions with real GitHub timestamps (forks, workflow runs). Stars excluded due to lack of individual timestamps in GitHub API.")
     st.markdown("---")
 
     # Create sidebar filters

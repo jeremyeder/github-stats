@@ -220,6 +220,19 @@ def show():
     """Display the query builder dashboard."""
     st.header("🔍 Query Builder")
     st.markdown("Build custom queries to analyze your GitHub interaction data.")
+    
+    # Data integrity note
+    with st.expander("ℹ️ Data Integrity Note"):
+        st.markdown("""
+        **Real GitHub Timestamps Only**
+        
+        This dashboard shows only interactions with authentic GitHub API timestamps:
+        - ✅ **Forks & Workflow Runs**: Real timestamps from GitHub
+        - ⚠️ **Stars**: Not shown individually (GitHub API doesn't provide star timestamps)
+        - 🔄 **Other events**: Only included if they have real GitHub timestamps
+        
+        This ensures all visualizations reflect actual activity patterns, not synthetic data.
+        """)
 
     # Get real data from database
     available_orgs = get_organizations()
