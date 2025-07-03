@@ -1,7 +1,7 @@
 """Database connection and session management."""
 
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -29,8 +29,8 @@ def get_db_session() -> sessionmaker[Session]:
 @contextmanager
 def get_db() -> Generator[Session, None, None]:
     """Provide a transactional scope for database operations."""
-    SessionLocal = get_db_session()
-    db = SessionLocal()
+    session_local = get_db_session()
+    db = session_local()
     try:
         yield db
         db.commit()

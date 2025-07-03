@@ -18,6 +18,10 @@ dependencies = [
     "alembic>=1.12.0",
     "jinja2>=3.1.0",
     "schedule>=1.2.0",
+    "streamlit>=1.29.0",
+    "plotly>=5.18.0",
+    "pandas>=2.0.0",
+    "altair>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -36,8 +40,10 @@ github-stats = "github_stats.cli:app"
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "B", "C90", "UP", "S"]
-ignore = ["S101"]  # Allow assert in tests
+ignore = ["S101", "S603"]  # Allow assert in tests, subprocess calls
 
 [tool.mypy]
 python_version = "3.11"

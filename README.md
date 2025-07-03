@@ -7,6 +7,7 @@ Track interactions with GitHub organizations and repositories.
 - **Comprehensive tracking** - commits, pull requests, issues, stars, forks, releases, workflow runs, and API calls
 - **Email reports** - automated daily/weekly/monthly reports with HTML and text formats
 - **Scheduled reporting** - automated email reports with customizable schedules
+- **Interactive Web Dashboard** - Streamlit-based dashboard for visualizing statistics
 - Support for multiple organizations and repositories
 - SQLite database for storing interaction history
 - Rich CLI interface with statistics and reporting
@@ -50,6 +51,14 @@ SMTP_PORT=587
 SMTP_USERNAME=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
 SMTP_USE_TLS=true
+```
+
+### Logging Configuration (Optional)
+
+By default, the application only shows warnings and errors. To enable verbose logging, add to your `.env` file:
+```
+LOG_LEVEL=INFO    # For detailed information
+LOG_LEVEL=DEBUG   # For debugging information
 ```
 
 ## Usage
@@ -128,6 +137,43 @@ github-stats send-report user@example.com --org microsoft --days 30
 github-stats schedule-reports user@example.com --daily --time 09:00
 github-stats schedule-reports user@example.com --weekly --time 09:00 --org myorg
 ```
+
+## Streamlit Dashboard
+
+The application includes an interactive web dashboard built with Streamlit for visualizing GitHub statistics.
+
+### Running the Dashboard
+
+```bash
+# Option 1: Use the shell script (recommended)
+./start_dashboard.sh
+
+# Option 2: Use the Python script (automatically uses virtual environment)
+python3 run_streamlit.py
+
+# Option 3: Activate virtual environment and run directly
+source venv/bin/activate
+streamlit run streamlit_app/app.py
+
+# Option 4: Run with virtual environment Python directly
+./venv/bin/python -m streamlit run streamlit_app/app.py
+```
+
+The dashboard will be available at http://localhost:8501
+
+### Dashboard Features
+
+- **Overview Page**: High-level metrics and recent activity summary
+- **Repository Stats**: Detailed statistics for individual repositories including:
+  - Stars, forks, and issue counts
+  - Interaction timeline charts
+  - Top contributors
+  - Action type distribution
+- **Developer Stats**: Individual developer activity analysis including:
+  - Total interactions and repository contributions
+  - Activity timeline
+  - Action type breakdown
+  - Detailed activity log
 
 ## Database Schema
 
