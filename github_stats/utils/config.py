@@ -15,7 +15,7 @@ class Settings(BaseSettings):
         "sqlite:///./github_stats.db", 
         env="DATABASE_URL"
     )
-    log_level: str = Field("INFO", env="LOG_LEVEL")
+    log_level: str = Field("WARNING", env="LOG_LEVEL")
     
     # Email configuration
     smtp_server: Optional[str] = Field(None, env="SMTP_SERVER")

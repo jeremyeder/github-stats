@@ -53,6 +53,14 @@ SMTP_PASSWORD=your_app_password
 SMTP_USE_TLS=true
 ```
 
+### Logging Configuration (Optional)
+
+By default, the application only shows warnings and errors. To enable verbose logging, add to your `.env` file:
+```
+LOG_LEVEL=INFO    # For detailed information
+LOG_LEVEL=DEBUG   # For debugging information
+```
+
 ## Usage
 
 ### Initialize the database
