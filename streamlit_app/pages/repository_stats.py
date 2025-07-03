@@ -7,15 +7,15 @@ import plotly.express as px
 import streamlit as st
 from sqlalchemy import func
 
-from github_stats.models.interactions import Developer, Interaction, Repository
-from github_stats.utils.database import get_session
+from github_stats.models.interactions import Interaction, Repository
+from github_stats.utils.database import get_db
 
 
 def show():
     """Display repository statistics."""
     st.header("🏢 Repository Statistics")
 
-    with get_session() as session:
+    with get_db() as session:
         repos = session.query(Repository).all()
         repo_names = [repo.full_name for repo in repos]
 
@@ -31,13 +31,13 @@ def show():
             col1, col2, col3 = st.columns(3)
 
             with col1:
-                st.metric("Stars", repo.stars_count)
+                st.metric("Stars", getattr(repo, 'stars_count', 'N/A'))
 
             with col2:
-                st.metric("Forks", repo.forks_count)
+                st.metric("Forks", getattr(repo, 'forks_count', 'N/A'))
 
             with col3:
-                st.metric("Open Issues", repo.open_issues_count)
+                st.metric("Open Issues", getattr(repo, 'open_issues_count', 'N/A'))
 
             st.markdown("---")
 
@@ -59,20 +59,20 @@ def show():
                 date_filter = datetime.min
 
             interactions_data = session.query(
-                func.date(Interaction.date).label('date'),
-                Interaction.action_type,
+                func.date(Interaction.timestamp).label('date'),
+                Interaction.action,
                 func.count(Interaction.id).label('count')
             ).filter(
                 Interaction.repository_id == repo.id,
-                Interaction.date >= date_filter
+                Interaction.timestamp >= date_filter
             ).group_by(
-                func.date(Interaction.date),
-                Interaction.action_type
+                func.date(Interaction.timestamp),
+                Interaction.action
             ).all()
 
             if interactions_data:
                 df = pd.DataFrame([
-                    {'date': i.date, 'action_type': i.action_type, 'count': i.count}
+                    {'date': i.date, 'action_type': i.action or 'Unknown', 'count': i.count}
                     for i in interactions_data
                 ])
 
@@ -104,19 +104,20 @@ def show():
             st.subheader("👥 Top Contributors to this Repository")
 
             top_contributors = session.query(
-                Developer.username,
+                Interaction.user,
                 func.count(Interaction.id).label('interaction_count')
-            ).join(Interaction).filter(
-                Interaction.repository_id == repo.id
+            ).filter(
+                Interaction.repository_id == repo.id,
+                Interaction.user.isnot(None)
             ).group_by(
-                Developer.id
+                Interaction.user
             ).order_by(
                 func.count(Interaction.id).desc()
             ).limit(10).all()
 
             if top_contributors:
                 contrib_df = pd.DataFrame([
-                    {'Developer': c.username, 'Interactions': c.interaction_count}
+                    {'Developer': c.user, 'Interactions': c.interaction_count}
                     for c in top_contributors
                 ])
 

@@ -137,11 +137,18 @@ The application includes an interactive web dashboard built with Streamlit for v
 ### Running the Dashboard
 
 ```bash
-# Run the Streamlit dashboard
-python run_streamlit.py
+# Option 1: Use the shell script (recommended)
+./start_dashboard.sh
 
-# Or using streamlit directly
+# Option 2: Use the Python script (automatically uses virtual environment)
+python3 run_streamlit.py
+
+# Option 3: Activate virtual environment and run directly
+source venv/bin/activate
 streamlit run streamlit_app/app.py
+
+# Option 4: Run with virtual environment Python directly
+./venv/bin/python -m streamlit run streamlit_app/app.py
 ```
 
 The dashboard will be available at http://localhost:8501

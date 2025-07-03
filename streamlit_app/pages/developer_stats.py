@@ -7,17 +7,20 @@ import plotly.express as px
 import streamlit as st
 from sqlalchemy import func
 
-from github_stats.models.interactions import Developer, Interaction, Repository
-from github_stats.utils.database import get_session
+from github_stats.models.interactions import Interaction, Repository
+from github_stats.utils.database import get_db
 
 
 def show():
     """Display developer statistics."""
     st.header("👨‍💻 Developer Statistics")
 
-    with get_session() as session:
-        developers = session.query(Developer).all()
-        dev_usernames = [dev.username for dev in developers]
+    with get_db() as session:
+        # Get unique usernames from interactions
+        developers = session.query(Interaction.user).filter(
+            Interaction.user.isnot(None)
+        ).distinct().all()
+        dev_usernames = [dev.user for dev in developers]
 
         if not dev_usernames:
             st.warning("No developers found. Start tracking some developers first!")
@@ -26,15 +29,14 @@ def show():
         selected_dev = st.selectbox("Select a developer:", dev_usernames)
 
         if selected_dev:
-            developer = session.query(Developer).filter_by(
-                username=selected_dev
-            ).first()
+            # We don't have a developer model, so we'll work with the username directly
+            developer_username = selected_dev
 
             col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 total_interactions = session.query(func.count(Interaction.id)).filter(
-                    Interaction.developer_id == developer.id
+                    Interaction.user == developer_username
                 ).scalar()
                 st.metric("Total Interactions", total_interactions)
 
@@ -42,31 +44,31 @@ def show():
                 unique_repos = session.query(
                     func.count(func.distinct(Interaction.repository_id))
                 ).filter(
-                    Interaction.developer_id == developer.id
+                    Interaction.user == developer_username
                 ).scalar()
                 st.metric("Repositories Contributed To", unique_repos)
 
             with col3:
                 recent_interactions = session.query(func.count(Interaction.id)).filter(
-                    Interaction.developer_id == developer.id,
-                    Interaction.date >= datetime.now() - timedelta(days=7)
+                    Interaction.user == developer_username,
+                    Interaction.timestamp >= datetime.now() - timedelta(days=7)
                 ).scalar()
                 st.metric("Interactions (Last 7 Days)", recent_interactions)
 
             with col4:
                 most_common_action = session.query(
-                    Interaction.action_type,
+                    Interaction.action,
                     func.count(Interaction.id).label('count')
                 ).filter(
-                    Interaction.developer_id == developer.id
+                    Interaction.user == developer_username
                 ).group_by(
-                    Interaction.action_type
+                    Interaction.action
                 ).order_by(
                     func.count(Interaction.id).desc()
                 ).first()
 
-                if most_common_action:
-                    st.metric("Most Common Action", most_common_action.action_type)
+                if most_common_action and most_common_action.action:
+                    st.metric("Most Common Action", most_common_action.action)
                 else:
                     st.metric("Most Common Action", "N/A")
 
@@ -90,13 +92,13 @@ def show():
                 date_filter = datetime.min
 
             activity_data = session.query(
-                func.date(Interaction.date).label('date'),
+                func.date(Interaction.timestamp).label('date'),
                 func.count(Interaction.id).label('count')
             ).filter(
-                Interaction.developer_id == developer.id,
-                Interaction.date >= date_filter
+                Interaction.user == developer_username,
+                Interaction.timestamp >= date_filter
             ).group_by(
-                func.date(Interaction.date)
+                func.date(Interaction.timestamp)
             ).all()
 
             if activity_data:
@@ -124,17 +126,17 @@ def show():
                 st.subheader("🎯 Action Types Distribution")
 
                 action_dist = session.query(
-                    Interaction.action_type,
+                    Interaction.action,
                     func.count(Interaction.id).label('count')
                 ).filter(
-                    Interaction.developer_id == developer.id
+                    Interaction.user == developer_username
                 ).group_by(
-                    Interaction.action_type
+                    Interaction.action
                 ).all()
 
                 if action_dist:
                     action_df = pd.DataFrame([
-                        {'Action Type': a.action_type, 'Count': a.count}
+                        {'Action Type': a.action or 'Unknown', 'Count': a.count}
                         for a in action_dist
                     ])
 
@@ -155,7 +157,7 @@ def show():
                     Repository.full_name,
                     func.count(Interaction.id).label('interaction_count')
                 ).join(Interaction).filter(
-                    Interaction.developer_id == developer.id
+                    Interaction.user == developer_username
                 ).group_by(
                     Repository.id
                 ).order_by(
@@ -176,9 +178,9 @@ def show():
             st.subheader("📊 Detailed Activity Log")
 
             recent_activities = session.query(Interaction).filter(
-                Interaction.developer_id == developer.id
+                Interaction.user == developer_username
             ).order_by(
-                Interaction.date.desc()
+                Interaction.timestamp.desc()
             ).limit(20).all()
 
             if recent_activities:
@@ -186,10 +188,10 @@ def show():
                 for activity in recent_activities:
                     repo = session.query(Repository).get(activity.repository_id)
                     activity_list.append({
-                        'Date': activity.date.strftime('%Y-%m-%d %H:%M'),
+                        'Date': activity.timestamp.strftime('%Y-%m-%d %H:%M'),
                         'Repository': repo.full_name if repo else 'Unknown',
-                        'Action': activity.action_type,
-                        'Details': activity.details or 'N/A'
+                        'Action': activity.action or 'Unknown',
+                        'Details': getattr(activity, 'extra_data', {}) or 'N/A'
                     })
 
                 activity_df = pd.DataFrame(activity_list)
