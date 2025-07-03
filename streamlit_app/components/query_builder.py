@@ -388,26 +388,47 @@ LIMIT 1000;"""
         st.subheader("📊 Query Results")
 
         # Execute real query
-        results_df = execute_query(
-            selected_orgs,
-            selected_repos,
-            selected_users,
-            selected_types,
-            selected_actions,
-            date_range,
-            logical_operator
-        )
+        try:
+            results_df = execute_query(
+                selected_orgs,
+                selected_repos,
+                selected_users,
+                selected_types,
+                selected_actions,
+                date_range,
+                logical_operator
+            )
+        except Exception as e:
+            st.error(f"Error executing query: {e}")
+            return
+
+        # Check if we have results
+        if len(results_df) == 0:
+            st.info("No results found for the selected filters. Try adjusting your criteria or expanding the date range.")
+            return
 
         # Results summary
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Results", len(results_df))
         with col2:
-            st.metric("Unique Users", results_df['User'].nunique())
+            if len(results_df) > 0 and 'User' in results_df.columns:
+                unique_users = results_df['User'].nunique()
+            else:
+                unique_users = 0
+            st.metric("Unique Users", unique_users)
         with col3:
-            st.metric("Unique Repos", results_df['Repository'].nunique())
+            if len(results_df) > 0 and 'Repository' in results_df.columns:
+                unique_repos = results_df['Repository'].nunique()
+            else:
+                unique_repos = 0
+            st.metric("Unique Repos", unique_repos)
         with col4:
-            st.metric("Date Range", f"{len(results_df['Timestamp'].dt.date.unique())} days")
+            if len(results_df) > 0 and 'Timestamp' in results_df.columns:
+                unique_days = len(results_df['Timestamp'].dt.date.unique())
+            else:
+                unique_days = 0
+            st.metric("Date Range", f"{unique_days} days")
 
         # Export options
         st.markdown("**Export Options:**")
