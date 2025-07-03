@@ -227,10 +227,6 @@ def show():
     available_users = get_users()
     available_actions = get_actions()
 
-    # Check for clear form state
-    if st.session_state.get('clear_form', False):
-        st.session_state.clear_form = False
-        # Clear form will reset all default values
 
     # Full width layout with filters at top
     st.subheader("🛠️ Query Filters")
@@ -243,7 +239,7 @@ def show():
         selected_orgs = st.multiselect(
             "Organizations",
             options=available_orgs,
-            default=[] if not st.session_state.get('clear_form', False) else [],
+            key="selected_orgs",
             help="Select organizations to include in the query"
         )
 
@@ -251,7 +247,7 @@ def show():
         selected_types = st.multiselect(
             "Interaction Types",
             options=[t.value for t in InteractionType],
-            default=[] if not st.session_state.get('clear_form', False) else [],
+            key="selected_types",
             help="Select interaction types to include"
         )
 
@@ -260,7 +256,7 @@ def show():
         selected_repos = st.multiselect(
             "Repositories",
             options=available_repos,
-            default=[] if not st.session_state.get('clear_form', False) else [],
+            key="selected_repos",
             help="Select repositories to include in the query"
         )
 
@@ -268,7 +264,7 @@ def show():
         selected_actions = st.multiselect(
             "Actions",
             options=available_actions,
-            default=[] if not st.session_state.get('clear_form', False) else [],
+            key="selected_actions",
             help="Select specific actions to filter by"
         )
 
@@ -277,7 +273,7 @@ def show():
         selected_users = st.multiselect(
             "Users",
             options=available_users,
-            default=[] if not st.session_state.get('clear_form', False) else [],
+            key="selected_users",
             help="Select specific users to filter by"
         )
 
@@ -286,6 +282,7 @@ def show():
         date_range = st.date_input(
             "Select date range",
             value=(datetime.now() - timedelta(days=30), datetime.now()),
+            key="date_range",
             help="Choose the date range for the query"
         )
 
@@ -293,6 +290,7 @@ def show():
         exclude_stars = st.checkbox(
             "⭐ Include stars",
             value=False,
+            key="exclude_stars",
             help="Include star interactions in query results"
         )
 
@@ -305,6 +303,7 @@ def show():
             "🔗 Query Logic:",
             options=["AND", "OR"],
             index=0,
+            key="logical_operator",
             help="Choose how to combine multiple filter conditions",
             horizontal=True
         )
@@ -325,7 +324,15 @@ def show():
         st.markdown("**Actions**")
         # Clear form button
         if st.button("🗑️ Clear Form", use_container_width=True):
-            st.session_state.clear_form = True
+            # Clear all session state keys for form fields
+            keys_to_clear = [
+                'selected_orgs', 'selected_types', 'selected_repos', 
+                'selected_actions', 'selected_users', 'date_range',
+                'exclude_stars', 'logical_operator', 'query_executed'
+            ]
+            for key in keys_to_clear:
+                if key in st.session_state:
+                    del st.session_state[key]
             st.rerun()
 
     # Conditional Query Preview Section
