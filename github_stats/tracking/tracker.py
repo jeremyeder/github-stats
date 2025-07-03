@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
+from dateutil import parser as date_parser
 
 from ..api import GitHubClient
 from ..constants import ERROR_MESSAGES, LOG_MESSAGES
@@ -156,10 +157,20 @@ class InteractionTracker:
                 )
 
                 for commit in commits:
+                    # Extract commit timestamp from GitHub API
+                    commit_date_str = commit.get("commit", {}).get("author", {}).get("date")
+                    commit_timestamp = None
+                    if commit_date_str:
+                        try:
+                            commit_timestamp = date_parser.parse(commit_date_str)
+                        except (ValueError, TypeError):
+                            commit_timestamp = None
+                    
                     interaction = Interaction(
                         type=InteractionType.COMMIT,
                         repository_id=repo_obj.id,
                         organization_id=repo_obj.organization_id,
+                        timestamp=commit_timestamp,  # Use real GitHub timestamp
                         user=commit.get("commit", {}).get("author", {}).get("name"),
                         action="commit",
                         resource_id=commit.get("sha"),
@@ -167,9 +178,8 @@ class InteractionTracker:
                         extra_data={
                             "message": commit.get("commit", {}).get("message"),
                             "sha": commit.get("sha"),
-                            "date": commit.get("commit", {}).get("author", {}).get(
-                                "date"
-                            )
+                            "committer_date": commit.get("commit", {}).get("committer", {}).get("date"),
+                            "author_date": commit_date_str
                         }
                     )
                     db.add(interaction)
@@ -217,10 +227,20 @@ class InteractionTracker:
                     if "pull_request" in issue:
                         continue
 
+                    # Extract issue timestamp from GitHub API
+                    issue_date_str = issue.get("created_at")
+                    issue_timestamp = None
+                    if issue_date_str:
+                        try:
+                            issue_timestamp = date_parser.parse(issue_date_str)
+                        except (ValueError, TypeError):
+                            issue_timestamp = None
+
                     interaction = Interaction(
                         type=InteractionType.ISSUE,
                         repository_id=repo_obj.id,
                         organization_id=repo_obj.organization_id,
+                        timestamp=issue_timestamp,  # Use real GitHub timestamp
                         user=issue.get("user", {}).get("login"),
                         action=f"issue_{issue.get('state')}",
                         resource_id=str(issue.get("number")),
@@ -228,6 +248,9 @@ class InteractionTracker:
                         extra_data={
                             "title": issue.get("title"),
                             "state": issue.get("state"),
+                            "created_at": issue.get("created_at"),
+                            "updated_at": issue.get("updated_at"),
+                            "closed_at": issue.get("closed_at"),
                             "labels": [
                                 label.get("name") for label in issue.get("labels", [])
                             ]
@@ -271,10 +294,20 @@ class InteractionTracker:
                 )
 
                 for pr in pulls:
+                    # Extract PR timestamp from GitHub API
+                    created_at_str = pr.get("created_at")
+                    pr_timestamp = None
+                    if created_at_str:
+                        try:
+                            pr_timestamp = date_parser.parse(created_at_str)
+                        except (ValueError, TypeError):
+                            pr_timestamp = None
+
                     interaction = Interaction(
                         type=InteractionType.PULL_REQUEST,
                         repository_id=repo_obj.id,
                         organization_id=repo_obj.organization_id,
+                        timestamp=pr_timestamp,  # Use real GitHub timestamp
                         user=pr.get("user", {}).get("login"),
                         action=f"pr_{pr.get('state')}",
                         resource_id=str(pr.get("number")),
@@ -284,7 +317,11 @@ class InteractionTracker:
                             "state": pr.get("state"),
                             "merged": pr.get("merged", False),
                             "base": pr.get("base", {}).get("ref"),
-                            "head": pr.get("head", {}).get("ref")
+                            "head": pr.get("head", {}).get("ref"),
+                            "created_at": created_at_str,
+                            "updated_at": pr.get("updated_at"),
+                            "merged_at": pr.get("merged_at"),
+                            "closed_at": pr.get("closed_at")
                         }
                     )
                     db.add(interaction)
@@ -314,13 +351,23 @@ class InteractionTracker:
     ) -> list[Interaction]:
         """Track stargazers for a repository."""
         def extract_star_data(star: dict[str, Any]) -> dict[str, Any]:
+            # Extract star timestamp from GitHub API
+            starred_at_str = star.get("starred_at")
+            star_timestamp = None
+            if starred_at_str:
+                try:
+                    star_timestamp = date_parser.parse(starred_at_str)
+                except (ValueError, TypeError):
+                    star_timestamp = None
+            
             return {
+                "timestamp": star_timestamp,  # Use real GitHub timestamp
                 "user": star.get("login"),
                 "action": "star",
                 "resource_id": str(star.get("id")),
                 "resource_url": star.get("html_url"),
                 "extra_data": {
-                    "starred_at": star.get("starred_at"),
+                    "starred_at": starred_at_str,
                     "user_type": star.get("type")
                 }
             }
@@ -341,14 +388,24 @@ class InteractionTracker:
     ) -> list[Interaction]:
         """Track forks for a repository."""
         def extract_fork_data(fork: dict[str, Any]) -> dict[str, Any]:
+            # Extract fork timestamp from GitHub API
+            created_at_str = fork.get("created_at")
+            fork_timestamp = None
+            if created_at_str:
+                try:
+                    fork_timestamp = date_parser.parse(created_at_str)
+                except (ValueError, TypeError):
+                    fork_timestamp = None
+            
             return {
+                "timestamp": fork_timestamp,  # Use real GitHub timestamp
                 "user": fork.get("owner", {}).get("login"),
                 "action": "fork",
                 "resource_id": str(fork.get("id")),
                 "resource_url": fork.get("html_url"),
                 "extra_data": {
                     "fork_name": fork.get("full_name"),
-                    "created_at": fork.get("created_at"),
+                    "created_at": created_at_str,
                     "private": fork.get("private", False)
                 }
             }
@@ -369,7 +426,17 @@ class InteractionTracker:
     ) -> list[Interaction]:
         """Track releases for a repository."""
         def extract_release_data(release: dict[str, Any]) -> dict[str, Any]:
+            # Extract release timestamp from GitHub API
+            published_at_str = release.get("published_at")
+            release_timestamp = None
+            if published_at_str:
+                try:
+                    release_timestamp = date_parser.parse(published_at_str)
+                except (ValueError, TypeError):
+                    release_timestamp = None
+            
             return {
+                "timestamp": release_timestamp,  # Use real GitHub timestamp
                 "user": release.get("author", {}).get("login"),
                 "action": "release",
                 "resource_id": str(release.get("id")),
@@ -379,7 +446,8 @@ class InteractionTracker:
                     "name": release.get("name"),
                     "draft": release.get("draft", False),
                     "prerelease": release.get("prerelease", False),
-                    "published_at": release.get("published_at")
+                    "published_at": published_at_str,
+                    "created_at": release.get("created_at")
                 }
             }
 
@@ -399,7 +467,17 @@ class InteractionTracker:
     ) -> list[Interaction]:
         """Track workflow runs for a repository."""
         def extract_workflow_data(run: dict[str, Any]) -> dict[str, Any]:
+            # Extract workflow run timestamp from GitHub API
+            created_at_str = run.get("created_at")
+            workflow_timestamp = None
+            if created_at_str:
+                try:
+                    workflow_timestamp = date_parser.parse(created_at_str)
+                except (ValueError, TypeError):
+                    workflow_timestamp = None
+            
             return {
+                "timestamp": workflow_timestamp,  # Use real GitHub timestamp
                 "user": run.get("actor", {}).get("login"),
                 "action": f"workflow_{run.get('status')}",
                 "resource_id": str(run.get("id")),
@@ -410,7 +488,7 @@ class InteractionTracker:
                     "conclusion": run.get("conclusion"),
                     "run_number": run.get("run_number"),
                     "event": run.get("event"),
-                    "created_at": run.get("created_at"),
+                    "created_at": created_at_str,
                     "updated_at": run.get("updated_at")
                 }
             }
