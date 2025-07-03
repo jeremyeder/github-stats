@@ -49,7 +49,7 @@ def get_actions():
         ).distinct().all()
         return [action.action for action in actions]
 
-def execute_query(selected_orgs, selected_repos, selected_users, selected_types, selected_actions, date_range, logical_operator="AND"):
+def execute_query(selected_orgs, selected_repos, selected_users, selected_types, selected_actions, date_range, logical_operator="AND", exclude_stars=True):
     """Execute real database query based on filter selections."""
     with get_db() as session:
         # Build base query with joins
@@ -94,6 +94,10 @@ def execute_query(selected_orgs, selected_repos, selected_users, selected_types,
             end_datetime = datetime.combine(end_date, datetime.max.time())
             conditions.append(Interaction.timestamp.between(start_datetime, end_datetime))
 
+        # Exclude stars if requested
+        if exclude_stars:
+            conditions.append(Interaction.type != InteractionType.STAR)
+
         # Apply conditions with logical operator
         if conditions:
             if logical_operator == "AND":
@@ -123,7 +127,7 @@ def execute_query(selected_orgs, selected_repos, selected_users, selected_types,
 
         return pd.DataFrame(data)
 
-def generate_chart_data(selected_orgs, selected_repos, selected_users, selected_types, selected_actions, date_range, logical_operator="AND"):
+def generate_chart_data(selected_orgs, selected_repos, selected_users, selected_types, selected_actions, date_range, logical_operator="AND", exclude_stars=True):
     """Generate real chart data from database based on filters."""
     with get_db() as session:
         # Build base query with same filters as main query
@@ -156,6 +160,10 @@ def generate_chart_data(selected_orgs, selected_repos, selected_users, selected_
             start_datetime = datetime.combine(start_date, datetime.min.time())
             end_datetime = datetime.combine(end_date, datetime.max.time())
             conditions.append(Interaction.timestamp.between(start_datetime, end_datetime))
+
+        # Exclude stars if requested
+        if exclude_stars:
+            conditions.append(Interaction.type != InteractionType.STAR)
 
         # Apply conditions
         if conditions:
@@ -221,10 +229,10 @@ def show():
 
     # Full width layout with filters at top
     st.subheader("🛠️ Query Filters")
-    
+
     # Filters in a grid layout
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         # Organization filter
         selected_orgs = st.multiselect(
@@ -276,9 +284,16 @@ def show():
             help="Choose the date range for the query"
         )
 
+        # Star filter checkbox
+        exclude_stars = st.checkbox(
+            "⭐ Include stars",
+            value=False,
+            help="Include star interactions in query results"
+        )
+
     # Controls row
     col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
-    
+
     with col1:
         # Logical operators
         logical_operator = st.radio(
@@ -330,6 +345,10 @@ def show():
         if len(date_range) == 2:
             query_parts.append(f"i.timestamp BETWEEN '{date_range[0]}' AND '{date_range[1]}'")
 
+        # Add star exclusion if not including stars
+        if not exclude_stars:
+            query_parts.append("i.type != 'star'")
+
         where_clause = f" {logical_operator} ".join(query_parts) if query_parts else "1=1"
 
         mock_sql = f"""SELECT *
@@ -361,7 +380,8 @@ ORDER BY i.timestamp DESC;"""
                 selected_types,
                 selected_actions,
                 date_range,
-                logical_operator
+                logical_operator,
+                not exclude_stars  # Invert because checkbox is "Include stars"
             )
         except Exception as e:
             st.error(f"Error executing query: {e}")
@@ -448,7 +468,8 @@ ORDER BY i.timestamp DESC;"""
                 selected_types,
                 selected_actions,
                 date_range,
-                logical_operator
+                logical_operator,
+                not exclude_stars  # Invert because checkbox is "Include stars"
             )
 
             # Time series chart
