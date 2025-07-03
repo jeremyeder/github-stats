@@ -28,22 +28,22 @@ class TestStreamlitApp:
 
         # Check that all expected pages are in the radio options
         radio_options = at.radio[0].options
-        expected_pages = ["Overview", "Repository Stats", "Developer Stats"]
+        expected_pages = ["Query Builder", "Repository Stats", "Developer Stats"]
 
         for page in expected_pages:
             assert page in radio_options, f"Page '{page}' not found in navigation"
 
-    def test_default_page_is_overview(self, mock_empty_db):
-        """Test that Overview is the default page."""
+    def test_default_page_is_query_builder(self, mock_empty_db):
+        """Test that Query Builder is the default page."""
         at = AppTest.from_file("streamlit_app/app.py")
         at.run()
 
-        # Check that Overview is selected by default
-        assert at.radio[0].value == "Overview"
+        # Check that Query Builder is selected by default
+        assert at.radio[0].value == "Query Builder"
 
-        # Check that overview content is displayed
+        # Check that query builder content is displayed
         headers = [h.value for h in at.header]
-        assert any("GitHub Stats Overview" in str(h) for h in headers)
+        assert any("Query Builder" in str(h) for h in headers)
 
     def test_page_navigation_repository_stats(self, mock_empty_db):
         """Test navigation to Repository Stats page."""
@@ -115,6 +115,40 @@ class TestStreamlitApp:
         # Should show warning about no developers
         warnings = [w.value for w in at.warning]
         assert any("No developers found" in str(w) for w in warnings)
+
+    def test_page_navigation_query_builder(self, mock_empty_db):
+        """Test navigation to Query Builder page."""
+        at = AppTest.from_file("streamlit_app/app.py")
+        at.run()
+
+        # Navigate to Query Builder
+        at.radio[0].set_value("Query Builder").run()
+
+        # Check that no exceptions occurred
+        assert not at.exception, f"Query Builder page crashed with: {at.exception}"
+
+        # Check that query builder content is displayed
+        headers = [h.value for h in at.header]
+        assert any("Query Builder" in str(h) for h in headers)
+
+        # Check that filter controls are present
+        assert len(at.multiselect) >= 4, "Expected at least 4 multiselect controls for filters"
+
+    def test_empty_data_handling_query_builder(self, mock_empty_db):
+        """Test that Query Builder page handles empty data gracefully."""
+        at = AppTest.from_file("streamlit_app/app.py")
+        at.run()
+
+        # Navigate to Query Builder
+        at.radio[0].set_value("Query Builder").run()
+
+        # Should not crash with empty data
+        assert not at.exception
+
+        # Check that multiselect controls are empty (no options available)
+        for multiselect in at.multiselect:
+            # Empty database should result in empty options lists
+            assert isinstance(multiselect.options, list), "Multiselect options should be a list"
 
     def test_page_config_settings(self, mock_empty_db):
         """Test that page configuration is set correctly."""

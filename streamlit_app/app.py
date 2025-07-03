@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from streamlit_app.components import developer_stats, overview, repository_stats
+from streamlit_app.components import developer_stats, query_builder, repository_stats
 
 
 def main():
@@ -21,12 +21,12 @@ def main():
         st.title("Navigation")
         page = st.radio(
             "Select a page:",
-            ["Overview", "Repository Stats", "Developer Stats"],
+            ["Query Builder", "Repository Stats", "Developer Stats"],
             index=0
         )
 
-    if page == "Overview":
-        overview.show()
+    if page == "Query Builder":
+        query_builder.show()
     elif page == "Repository Stats":
         repository_stats.show()
     elif page == "Developer Stats":
