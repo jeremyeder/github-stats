@@ -79,8 +79,8 @@ def show():
             if interactions_data:
                 df = pd.DataFrame([
                     {
-                        'date': i.date, 
-                        'action_type': i.action or 'Unknown', 
+                        'date': i.date,
+                        'action_type': i.action or 'Unknown',
                         'count': i.count
                     }
                     for i in interactions_data
@@ -111,7 +111,7 @@ def show():
                     # Fallback to basic Streamlit charts
                     pivot_df = df.pivot_table(values='count', index='date', columns='action_type', fill_value=0)
                     st.line_chart(pivot_df)
-                    
+
                     st.subheader("📈 Interaction Breakdown")
                     action_summary = df.groupby('action_type')['count'].sum().reset_index()
                     st.write("**Distribution of Interaction Types**")

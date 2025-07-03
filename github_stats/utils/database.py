@@ -48,13 +48,13 @@ def check_db_has_data() -> dict[str, int]:
         Dictionary with counts of each data type
     """
     from ..models.interactions import Interaction, Organization, Repository
-    
+
     counts = {
         "organizations": 0,
-        "repositories": 0, 
+        "repositories": 0,
         "interactions": 0
     }
-    
+
     try:
         with get_db() as db:
             counts["organizations"] = db.query(Organization).count()
@@ -63,7 +63,7 @@ def check_db_has_data() -> dict[str, int]:
     except Exception:
         # Database doesn't exist yet or has no tables
         pass
-    
+
     return counts
 
 

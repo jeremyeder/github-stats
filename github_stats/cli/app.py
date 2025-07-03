@@ -10,7 +10,7 @@ from ..api import GitHubClient
 from ..models import InteractionType
 from ..reports import EmailReporter, ReportScheduler
 from ..tracking import InteractionTracker
-from ..utils import get_db, init_db, setup_logging, check_db_has_data
+from ..utils import check_db_has_data, get_db, init_db, setup_logging
 from ..utils.config import get_settings
 
 app = typer.Typer(
@@ -26,29 +26,29 @@ console = Console()
 def init():
     """Initialize the database."""
     setup_logging()
-    
+
     # Check if database already has data
     data_counts = check_db_has_data()
     total_items = sum(data_counts.values())
-    
+
     if total_items > 0:
         console.print("[yellow]⚠ Existing data found in database:[/yellow]")
         for data_type, count in data_counts.items():
             if count > 0:
                 console.print(f"  • {count} {data_type}")
-        
+
         console.print()
         console.print(
             "[yellow]Warning: Running init will not delete existing data, "
             "but may create duplicate entries if you re-track the same repositories.[/yellow]"
         )
-        
+
         if not typer.confirm(
             "Do you want to continue with database initialization?"
         ):
             console.print("[yellow]Database initialization cancelled.[/yellow]")
             raise typer.Exit(0)
-    
+
     console.print("[bold green]Initializing database...[/bold green]")
     init_db()
     console.print("[bold green]Database initialized successfully![/bold green]")

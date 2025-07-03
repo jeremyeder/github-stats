@@ -28,7 +28,10 @@ class TestStreamlitApp:
 
         # Check that all expected pages are in the radio options
         radio_options = at.sidebar.radio[0].options
-        expected_pages = ["Query Builder", "Advanced Analytics", "Repository Stats", "Developer Stats"]
+        expected_pages = [
+            "Query Builder", "Advanced Analytics", 
+            "Repository Stats", "Developer Stats"
+        ]
 
         for page in expected_pages:
             assert page in radio_options, f"Page '{page}' not found in navigation"
@@ -133,7 +136,9 @@ class TestStreamlitApp:
         assert any("Query Builder" in str(h) for h in headers)
 
         # Check that filter controls are present
-        assert len(at.multiselect) >= 4, "Expected at least 4 multiselect controls for filters"
+        assert len(at.multiselect) >= 4, (
+            "Expected at least 4 multiselect controls for filters"
+        )
 
     def test_empty_data_handling_query_builder(self, mock_empty_db):
         """Test that Query Builder page handles empty data gracefully."""
@@ -149,7 +154,9 @@ class TestStreamlitApp:
         # Check that multiselect controls are empty (no options available)
         for multiselect in at.multiselect:
             # Empty database should result in empty options lists
-            assert isinstance(multiselect.options, list), "Multiselect options should be a list"
+            assert isinstance(multiselect.options, list), (
+                "Multiselect options should be a list"
+            )
 
     def test_page_config_settings(self, mock_empty_db):
         """Test that page configuration is set correctly."""

@@ -220,7 +220,7 @@ def show():
     """Display the query builder dashboard."""
     st.header("🔍 Query Builder")
     st.markdown("Build custom queries to analyze your GitHub interaction data.")
-    
+
     # Data integrity note
     with st.expander("ℹ️ Data Quality"):
         st.markdown("""

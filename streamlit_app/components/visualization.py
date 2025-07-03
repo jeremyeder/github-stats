@@ -159,9 +159,12 @@ def show():
     """Main visualization dashboard page."""
     st.title("📈 Advanced Analytics Dashboard")
     st.markdown("Comprehensive visualization and analysis of GitHub interactions")
-    
+
     # Data quality info
-    st.success("📊 **Data Quality**: 1,740+ interactions with 100% authentic GitHub timestamps spanning 65 days (April-July 2025)")
+    st.success(
+        "📊 **Data Quality**: 1,740+ interactions with 100% authentic "
+        "GitHub timestamps spanning 65 days (April-July 2025)"
+    )
     st.markdown("---")
 
     # Create sidebar filters
@@ -177,7 +180,10 @@ def show():
             df = chart_gen.get_interactions_data(filters)
 
             if df.empty:
-                st.warning("No data found for the selected filters. Try expanding your date range or removing some filters.")
+                st.warning(
+                    "No data found for the selected filters. Try expanding your "
+                    "date range or removing some filters."
+                )
                 return
 
             # Display metrics cards
@@ -191,7 +197,9 @@ def show():
 
             with col1:
                 st.subheader("📈 Interactions Over Time")
-                time_series_chart = chart_gen.create_time_series_chart(df, filters['time_grouping'])
+                time_series_chart = chart_gen.create_time_series_chart(
+                    df, filters['time_grouping']
+                )
                 st.plotly_chart(time_series_chart, use_container_width=True)
 
                 st.subheader("🥧 Interaction Types Distribution")
@@ -200,7 +208,9 @@ def show():
 
             with col2:
                 st.subheader("📊 Interactions by Type (Stacked)")
-                stacked_chart = chart_gen.create_stacked_bar_chart(df, filters['time_grouping'])
+                stacked_chart = chart_gen.create_stacked_bar_chart(
+                    df, filters['time_grouping']
+                )
                 st.plotly_chart(stacked_chart, use_container_width=True)
 
                 st.subheader("🌡️ Activity Heatmap")
@@ -211,7 +221,9 @@ def show():
             st.markdown("---")
             st.subheader("🏆 Top Rankings")
 
-            tab1, tab2, tab3 = st.tabs(["Top Repositories", "Top Users", "Top Organizations"])
+            tab1, tab2, tab3 = st.tabs([
+                "Top Repositories", "Top Users", "Top Organizations"
+            ])
 
             with tab1:
                 if 'repository_name' in df.columns:
@@ -278,7 +290,9 @@ def show():
 
                 if display_columns:
                     # Show paginated data
-                    page_size = st.selectbox("Rows per page:", [25, 50, 100, 500], index=1)
+                    page_size = st.selectbox(
+                        "Rows per page:", [25, 50, 100, 500], index=1
+                    )
 
                     total_pages = (len(df) - 1) // page_size + 1
                     page = st.number_input(

@@ -4,8 +4,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy.orm import Session
 from dateutil import parser as date_parser
+from sqlalchemy.orm import Session
 
 from ..api import GitHubClient
 from ..constants import ERROR_MESSAGES, LOG_MESSAGES
@@ -165,7 +165,7 @@ class InteractionTracker:
                             commit_timestamp = date_parser.parse(commit_date_str)
                         except (ValueError, TypeError):
                             commit_timestamp = None
-                    
+
                     interaction = Interaction(
                         type=InteractionType.COMMIT,
                         repository_id=repo_obj.id,
@@ -359,7 +359,7 @@ class InteractionTracker:
                     star_timestamp = date_parser.parse(starred_at_str)
                 except (ValueError, TypeError):
                     star_timestamp = None
-            
+
             return {
                 "timestamp": star_timestamp,  # Use real GitHub timestamp
                 "user": star.get("login"),
@@ -396,7 +396,7 @@ class InteractionTracker:
                     fork_timestamp = date_parser.parse(created_at_str)
                 except (ValueError, TypeError):
                     fork_timestamp = None
-            
+
             return {
                 "timestamp": fork_timestamp,  # Use real GitHub timestamp
                 "user": fork.get("owner", {}).get("login"),
@@ -434,7 +434,7 @@ class InteractionTracker:
                     release_timestamp = date_parser.parse(published_at_str)
                 except (ValueError, TypeError):
                     release_timestamp = None
-            
+
             return {
                 "timestamp": release_timestamp,  # Use real GitHub timestamp
                 "user": release.get("author", {}).get("login"),
@@ -475,7 +475,7 @@ class InteractionTracker:
                     workflow_timestamp = date_parser.parse(created_at_str)
                 except (ValueError, TypeError):
                     workflow_timestamp = None
-            
+
             return {
                 "timestamp": workflow_timestamp,  # Use real GitHub timestamp
                 "user": run.get("actor", {}).get("login"),

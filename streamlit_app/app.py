@@ -2,7 +2,12 @@
 
 import streamlit as st
 
-from streamlit_app.components import developer_stats, query_builder, repository_stats, visualization
+from streamlit_app.components import (
+    developer_stats,
+    query_builder,
+    repository_stats,
+    visualization,
+)
 
 
 def main():
