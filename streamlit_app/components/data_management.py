@@ -4,6 +4,7 @@ import streamlit as st
 from sqlalchemy import func
 
 from github_stats.models.interactions import Interaction, Organization, Repository
+from github_stats.tracking.tracker import InteractionTracker
 from github_stats.utils.database import get_db
 
 
@@ -34,67 +35,156 @@ def show():
         # Organizations management
         st.subheader("🏢 Organizations")
         
+        # Add new organization
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            new_org_name = st.text_input("Organization name (e.g., 'microsoft', 'google'):", key="new_org_input")
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to align with input
+            if st.button("➕ Add Organization", disabled=not new_org_name):
+                try:
+                    tracker = InteractionTracker()
+                    with st.spinner(f"Adding organization '{new_org_name}'..."):
+                        result = tracker.track_organization(new_org_name)
+                        if result["exists"]:
+                            st.success(f"✅ Successfully added organization: {new_org_name}")
+                        else:
+                            st.warning(f"⚠️ Organization '{new_org_name}' added but may not exist on GitHub")
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Failed to add organization: {str(e)}")
+        
         # List current organizations
         organizations = session.query(Organization).all()
         
         if organizations:
-            org_data = []
+            st.markdown("**Tracked Organizations:**")
             for org in organizations:
                 repo_count = session.query(Repository).filter_by(organization_id=org.id).count()
                 interaction_count = session.query(Interaction).filter_by(organization_id=org.id).count()
+                last_synced = org.last_synced_at.strftime("%Y-%m-%d %H:%M") if org.last_synced_at else "Never"
                 
-                org_data.append({
-                    "Name": org.name,
-                    "GitHub ID": org.github_id,
-                    "Repositories": repo_count,
-                    "Interactions": interaction_count,
-                    "Description": org.description or "N/A"
-                })
-            
-            st.dataframe(org_data, use_container_width=True, height=200)
+                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                
+                with col1:
+                    st.write(f"**{org.name}** - {repo_count} repos, {interaction_count} interactions")
+                    st.caption(f"Last synced: {last_synced}")
+                
+                with col2:
+                    if st.button("🔄 Sync", key=f"sync_org_{org.id}"):
+                        try:
+                            tracker = InteractionTracker()
+                            with st.spinner(f"Syncing {org.name}..."):
+                                result = tracker.track_organization(org.name)
+                                st.success(f"✅ Synced {org.name}")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Sync failed: {str(e)}")
+                
+                with col3:
+                    if st.button("🗑️ Delete", key=f"delete_org_{org.id}"):
+                        st.session_state[f"confirm_delete_org_{org.id}"] = True
+                
+                with col4:
+                    if st.session_state.get(f"confirm_delete_org_{org.id}", False):
+                        if st.button("✅ Confirm", key=f"confirm_org_{org.id}"):
+                            try:
+                                session.delete(org)
+                                session.commit()
+                                st.success(f"✅ Deleted organization: {org.name}")
+                                if f"confirm_delete_org_{org.id}" in st.session_state:
+                                    del st.session_state[f"confirm_delete_org_{org.id}"]
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ Delete failed: {str(e)}")
+                
+                st.markdown("---")
         else:
             st.info("No organizations currently tracked")
-        
-        # Add new organization
-        with st.expander("➕ Add New Organization"):
-            new_org_name = st.text_input("Organization name (e.g., 'microsoft', 'google'):")
-            if st.button("Add Organization", disabled=not new_org_name):
-                st.info(f"Would add organization: {new_org_name}")
-                st.warning("⚠️ Adding organizations requires implementation of tracking logic")
         
         st.markdown("---")
         
         # Repositories management  
         st.subheader("📁 Repositories")
         
+        # Add new repository
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            new_repo_name = st.text_input("Repository full name (e.g., 'microsoft/vscode', 'facebook/react'):", key="new_repo_input")
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to align with input
+            if st.button("➕ Add Repository", disabled=not new_repo_name):
+                try:
+                    if "/" not in new_repo_name:
+                        st.error("❌ Repository name must be in 'owner/repo' format")
+                    else:
+                        tracker = InteractionTracker()
+                        with st.spinner(f"Adding repository '{new_repo_name}'..."):
+                            result = tracker.track_repository(new_repo_name)
+                            if result["exists"]:
+                                st.success(f"✅ Successfully added repository: {new_repo_name}")
+                            else:
+                                st.warning(f"⚠️ Repository '{new_repo_name}' added but may not exist on GitHub")
+                            st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Failed to add repository: {str(e)}")
+        
         # List current repositories
         repositories = session.query(Repository).all()
         
         if repositories:
-            repo_data = []
+            st.markdown("**Tracked Repositories:**")
             for repo in repositories:
                 interaction_count = session.query(Interaction).filter_by(repository_id=repo.id).count()
-                last_activity = session.query(func.max(Interaction.timestamp)).filter_by(repository_id=repo.id).scalar()
+                last_synced = repo.last_synced_at.strftime("%Y-%m-%d %H:%M") if repo.last_synced_at else "Never"
+                org_name = repo.organization.name if repo.organization else "No org"
                 
-                repo_data.append({
-                    "Repository": repo.full_name,
-                    "Organization": repo.organization.name if repo.organization else "N/A",
-                    "GitHub ID": repo.github_id,
-                    "Interactions": interaction_count,
-                    "Last Activity": last_activity.strftime("%Y-%m-%d %H:%M") if last_activity else "Never",
-                    "Private": "Yes" if repo.is_private else "No"
-                })
-            
-            st.dataframe(repo_data, use_container_width=True, height=300)
+                col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+                
+                with col1:
+                    st.write(f"**{repo.full_name}** ({org_name}) - {interaction_count} interactions")
+                    st.caption(f"Last synced: {last_synced}")
+                
+                with col2:
+                    if st.button("🔄 Sync", key=f"sync_repo_{repo.id}"):
+                        try:
+                            tracker = InteractionTracker()
+                            owner, repo_name = repo.full_name.split('/')
+                            with st.spinner(f"Syncing {repo.full_name}..."):
+                                # Run full sync for all interaction types
+                                result = tracker.track_repository(repo.full_name)
+                                tracker.track_commits(owner, repo_name)
+                                tracker.track_issues(owner, repo_name)
+                                tracker.track_pull_requests(owner, repo_name)
+                                tracker.track_stargazers(owner, repo_name)
+                                tracker.track_forks(owner, repo_name)
+                                tracker.track_releases(owner, repo_name)
+                                tracker.track_workflow_runs(owner, repo_name)
+                                st.success(f"✅ Synced {repo.full_name}")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Sync failed: {str(e)}")
+                
+                with col3:
+                    if st.button("🗑️ Delete", key=f"delete_repo_{repo.id}"):
+                        st.session_state[f"confirm_delete_repo_{repo.id}"] = True
+                
+                with col4:
+                    if st.session_state.get(f"confirm_delete_repo_{repo.id}", False):
+                        if st.button("✅ Confirm", key=f"confirm_repo_{repo.id}"):
+                            try:
+                                session.delete(repo)
+                                session.commit()
+                                st.success(f"✅ Deleted repository: {repo.full_name}")
+                                if f"confirm_delete_repo_{repo.id}" in st.session_state:
+                                    del st.session_state[f"confirm_delete_repo_{repo.id}"]
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ Delete failed: {str(e)}")
+                
+                st.markdown("---")
         else:
             st.info("No repositories currently tracked")
-        
-        # Add new repository
-        with st.expander("➕ Add New Repository"):
-            new_repo_name = st.text_input("Repository full name (e.g., 'microsoft/vscode', 'facebook/react'):")
-            if st.button("Add Repository", disabled=not new_repo_name):
-                st.info(f"Would add repository: {new_repo_name}")
-                st.warning("⚠️ Adding repositories requires implementation of tracking logic")
         
         st.markdown("---")
         

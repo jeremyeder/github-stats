@@ -66,6 +66,7 @@ class InteractionTracker:
                 org_data = self.client.get_organization(org_name)
                 org.github_id = org_data.get("id")
                 org.description = org_data.get("description")
+                org.last_synced_at = datetime.now()
                 org_info["exists"] = True
                 org_info["github_id"] = org_data.get("id")
                 org_info["description"] = org_data.get("description")
@@ -111,6 +112,7 @@ class InteractionTracker:
                 repo.github_id = repo_data.get("id")
                 repo.description = repo_data.get("description")
                 repo.is_private = repo_data.get("private", False)
+                repo.last_synced_at = datetime.now()
                 repo_info["exists"] = True
                 repo_info["github_id"] = repo_data.get("id")
                 repo_info["description"] = repo_data.get("description")
