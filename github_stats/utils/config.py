@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = Field(True, env="SMTP_USE_TLS")
 
     @validator("log_level")
-    def validate_log_level(cls, v: str) -> str:
+    def validate_log_level(self, v: str) -> str:
         """Validate log level is valid."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         v = v.upper()

@@ -225,13 +225,13 @@ def show():
     with st.expander("ℹ️ Data Quality"):
         st.markdown("""
         **100% Authentic GitHub Data** ✅
-        
+
         All 1,740+ interactions have real GitHub API timestamps:
         - **Stars**: Real `starred_at` timestamps from GitHub
-        - **Commits**: Real `author.date` timestamps  
+        - **Commits**: Real `author.date` timestamps
         - **Issues & PRs**: Real `created_at` timestamps
         - **Forks & Workflows**: Real GitHub event timestamps
-        
+
         **Time span**: 65 days of authentic activity (April-July 2025)
         """)
 
@@ -444,7 +444,7 @@ ORDER BY i.timestamp DESC;"""
     with st.expander("❓ Help & Tips"):
         st.markdown("""
         **How to use the Query Builder:**
-        
+
         1. **Select Filters**: Choose organizations, repositories, users, and interaction types
         2. **Set Date Range**: Pick the time period you want to analyze
         3. **Choose Logic**: Use AND for stricter filtering, OR for broader results
@@ -452,7 +452,7 @@ ORDER BY i.timestamp DESC;"""
         5. **View Results**: Explore data in the table, visualizations, and analytics tabs
         6. **Save Queries**: Save frequently used queries for quick access
         7. **Export Data**: Download results in CSV, JSON, or Excel format
-        
+
         **Tips:**
         - Start with broad filters and narrow down for specific insights
         - Use date ranges to identify trends over time

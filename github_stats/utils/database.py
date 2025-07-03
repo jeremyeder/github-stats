@@ -43,7 +43,7 @@ def get_db() -> Generator[Session, None, None]:
 
 def check_db_has_data() -> dict[str, int]:
     """Check if database has existing data.
-    
+
     Returns:
         Dictionary with counts of each data type
     """

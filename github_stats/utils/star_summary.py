@@ -28,12 +28,12 @@ def create_star_summary_display() -> str:
     """Create a summary display for star information."""
     return """
     ⭐ **Star Information**
-    
+
     Stars don't have individual timestamps in the GitHub API response, so they're tracked
     as current counts rather than individual interaction events.
-    
+
     To get current star counts, the application would need to call:
     `GET /repos/{owner}/{repo}` and use the `stargazers_count` field.
-    
+
     This provides more accurate data than synthetic timestamps.
     """
