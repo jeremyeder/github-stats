@@ -107,6 +107,12 @@ def create_sidebar_filters() -> dict:
         help="Display the raw data table below charts"
     )
 
+    include_stars = st.sidebar.checkbox(
+        "⭐ Include stars",
+        value=False,
+        help="Include star interactions in analysis"
+    )
+
     enable_export = st.sidebar.checkbox(
         "Enable data export",
         value=True,
@@ -124,6 +130,7 @@ def create_sidebar_filters() -> dict:
         'time_grouping': time_grouping,
         'top_n': top_n,
         'show_raw_data': show_raw_data,
+        'include_stars': include_stars,
         'enable_export': enable_export
     }
 

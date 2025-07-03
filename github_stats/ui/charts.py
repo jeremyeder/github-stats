@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from sqlalchemy.orm import Session
 
-from ..models.interactions import Interaction
+from ..models.interactions import Interaction, InteractionType
 
 
 class ChartGenerator:
@@ -32,6 +32,8 @@ class ChartGenerator:
                 query = query.filter(Interaction.repository_id.in_(filters['repositories']))
             if filters.get('organizations'):
                 query = query.filter(Interaction.organization_id.in_(filters['organizations']))
+            if not filters.get('include_stars', True):  # Default to include stars
+                query = query.filter(Interaction.type != InteractionType.STAR)
 
         interactions = query.all()
 

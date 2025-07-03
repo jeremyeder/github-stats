@@ -227,6 +227,11 @@ def show():
     available_users = get_users()
     available_actions = get_actions()
 
+    # Check for clear form state
+    if st.session_state.get('clear_form', False):
+        st.session_state.clear_form = False
+        # Clear form will reset all default values
+
     # Full width layout with filters at top
     st.subheader("🛠️ Query Filters")
 
@@ -238,7 +243,7 @@ def show():
         selected_orgs = st.multiselect(
             "Organizations",
             options=available_orgs,
-            default=[],
+            default=[] if not st.session_state.get('clear_form', False) else [],
             help="Select organizations to include in the query"
         )
 
@@ -246,7 +251,7 @@ def show():
         selected_types = st.multiselect(
             "Interaction Types",
             options=[t.value for t in InteractionType],
-            default=[],
+            default=[] if not st.session_state.get('clear_form', False) else [],
             help="Select interaction types to include"
         )
 
@@ -255,7 +260,7 @@ def show():
         selected_repos = st.multiselect(
             "Repositories",
             options=available_repos,
-            default=[],
+            default=[] if not st.session_state.get('clear_form', False) else [],
             help="Select repositories to include in the query"
         )
 
@@ -263,7 +268,7 @@ def show():
         selected_actions = st.multiselect(
             "Actions",
             options=available_actions,
-            default=[],
+            default=[] if not st.session_state.get('clear_form', False) else [],
             help="Select specific actions to filter by"
         )
 
@@ -272,7 +277,7 @@ def show():
         selected_users = st.multiselect(
             "Users",
             options=available_users,
-            default=[],
+            default=[] if not st.session_state.get('clear_form', False) else [],
             help="Select specific users to filter by"
         )
 
@@ -317,7 +322,11 @@ def show():
             st.success("Query executed successfully!")
 
     with col4:
-        pass  # Empty space for balance
+        st.markdown("**Actions**")
+        # Clear form button
+        if st.button("🗑️ Clear Form", use_container_width=True):
+            st.session_state.clear_form = True
+            st.rerun()
 
     # Conditional Query Preview Section
     if show_preview:
@@ -365,6 +374,67 @@ ORDER BY i.timestamp DESC;"""
             st.success("✅ Query is valid")
         else:
             st.warning("⚠️ No filters selected - will return all data")
+
+    # Saved Queries Section
+    st.markdown("---")
+    st.subheader("💾 Saved Queries")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        query_name = st.text_input("Query Name", placeholder="Enter a name for this query")
+        if st.button("Save Query", use_container_width=True):
+            if query_name:
+                st.success(f"Query '{query_name}' saved successfully!")
+            else:
+                st.error("Please enter a query name")
+
+    with col2:
+        saved_queries = [
+            "Top Contributors Last Month",
+            "Pull Request Activity",
+            "Issue Tracking Report",
+            "Commit Frequency Analysis",
+            "Repository Comparison"
+        ]
+        selected_saved = st.selectbox("Load Saved Query", options=[""] + saved_queries)
+        if st.button("Load Query", use_container_width=True):
+            if selected_saved:
+                st.success(f"Loaded query: {selected_saved}")
+
+    with col3:
+        st.write("**Query Templates:**")
+        templates = [
+            "🚀 Most Active Repositories",
+            "👥 Developer Leaderboard",
+            "📊 Monthly Trends",
+            "🔧 Issue Resolution Times",
+            "🌟 Popular Features"
+        ]
+        for i, template in enumerate(templates):
+            if st.button(template, key=f"template_{i}", use_container_width=True):
+                st.info(f"Applied template: {template}")
+
+    # Help section
+    st.markdown("---")
+    with st.expander("❓ Help & Tips"):
+        st.markdown("""
+        **How to use the Query Builder:**
+        
+        1. **Select Filters**: Choose organizations, repositories, users, and interaction types
+        2. **Set Date Range**: Pick the time period you want to analyze
+        3. **Choose Logic**: Use AND for stricter filtering, OR for broader results
+        4. **Execute Query**: Click the execute button to run your query
+        5. **View Results**: Explore data in the table, visualizations, and analytics tabs
+        6. **Save Queries**: Save frequently used queries for quick access
+        7. **Export Data**: Download results in CSV, JSON, or Excel format
+        
+        **Tips:**
+        - Start with broad filters and narrow down for specific insights
+        - Use date ranges to identify trends over time
+        - Save complex queries as templates for team use
+        - Export data for further analysis in external tools
+        """)
 
     # Results Section
     if st.session_state.get('query_executed', False):
@@ -429,35 +499,9 @@ ORDER BY i.timestamp DESC;"""
                 st.success("Excel export initiated! (Mock)")
 
         # Tabbed results view
-        tab1, tab2, tab3 = st.tabs(["📋 Data Table", "📈 Visualizations", "📊 Analytics"])
+        tab1, tab2, tab3 = st.tabs(["📈 Visualizations", "📋 Data Table", "📊 Analytics"])
 
         with tab1:
-            st.subheader("Query Results Table")
-
-            # Pagination controls
-            page_size = st.selectbox("Results per page", [10, 25, 50, 100], index=1)
-            total_pages = (len(results_df) - 1) // page_size + 1
-
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                page = st.number_input(
-                    f"Page (1-{total_pages})",
-                    min_value=1,
-                    max_value=total_pages,
-                    value=1
-                )
-
-            # Display paginated results
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-
-            st.dataframe(
-                results_df.iloc[start_idx:end_idx],
-                use_container_width=True,
-                hide_index=True
-            )
-
-        with tab2:
             st.subheader("Data Visualizations")
 
             # Generate real chart data
@@ -525,6 +569,32 @@ ORDER BY i.timestamp DESC;"""
                 else:
                     st.info("No user data available for the selected filters.")
 
+        with tab2:
+            st.subheader("Query Results Table")
+
+            # Pagination controls
+            page_size = st.selectbox("Results per page", [10, 25, 50, 100], index=1)
+            total_pages = (len(results_df) - 1) // page_size + 1
+
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                page = st.number_input(
+                    f"Page (1-{total_pages})",
+                    min_value=1,
+                    max_value=total_pages,
+                    value=1
+                )
+
+            # Display paginated results
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+
+            st.dataframe(
+                results_df.iloc[start_idx:end_idx],
+                use_container_width=True,
+                hide_index=True
+            )
+
         with tab3:
             st.subheader("Analytics Summary")
 
@@ -554,65 +624,3 @@ ORDER BY i.timestamp DESC;"""
                 'change': ['+7.9%', '+8.5%', '+9.5%', '-14.3%']
             })
             st.dataframe(trend_data, use_container_width=True, hide_index=True)
-
-    # Saved Queries Section
-    st.markdown("---")
-    st.subheader("💾 Saved Queries")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        query_name = st.text_input("Query Name", placeholder="Enter a name for this query")
-        if st.button("Save Query", use_container_width=True):
-            if query_name:
-                st.success(f"Query '{query_name}' saved successfully!")
-            else:
-                st.error("Please enter a query name")
-
-    with col2:
-        saved_queries = [
-            "Top Contributors Last Month",
-            "Pull Request Activity",
-            "Issue Tracking Report",
-            "Commit Frequency Analysis",
-            "Repository Comparison"
-        ]
-        selected_saved = st.selectbox("Load Saved Query", options=[""] + saved_queries)
-        if st.button("Load Query", use_container_width=True):
-            if selected_saved:
-                st.success(f"Loaded query: {selected_saved}")
-
-    with col3:
-        st.write("**Query Templates:**")
-        templates = [
-            "🚀 Most Active Repositories",
-            "👥 Developer Leaderboard",
-            "📊 Monthly Trends",
-            "🔧 Issue Resolution Times",
-            "🌟 Popular Features"
-        ]
-        for i, template in enumerate(templates):
-            if st.button(template, key=f"template_{i}", use_container_width=True):
-                st.info(f"Applied template: {template}")
-
-    # Help section
-    st.markdown("---")
-    with st.expander("❓ Help & Tips"):
-        st.markdown("""
-        **How to use the Query Builder:**
-        
-        1. **Select Filters**: Choose organizations, repositories, users, and interaction types
-        2. **Set Date Range**: Pick the time period you want to analyze
-        3. **Choose Logic**: Use AND for stricter filtering, OR for broader results
-        4. **Execute Query**: Click the execute button to run your query
-        5. **View Results**: Explore data in the table, visualizations, and analytics tabs
-        6. **Save Queries**: Save frequently used queries for quick access
-        7. **Export Data**: Download results in CSV, JSON, or Excel format
-        
-        **Tips:**
-        - Start with broad filters and narrow down for specific insights
-        - Use date ranges to identify trends over time
-        - Save complex queries as templates for team use
-        - Export data for further analysis in external tools
-        """)
-
